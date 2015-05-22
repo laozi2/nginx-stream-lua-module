@@ -451,14 +451,15 @@ Nginx API for Lua
 >* **note**:
 >>*   The `connect_timeout`,`read_timeout`,`send_timeout` of tcpsock will default set by config command.
 >>*    Just like http  [http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) Creates and returns a TCP socket object (also known as one type of the "cosocket" objects). The following methods are supported on this object: 
->>>     connect
->>>     send
->>>     receive
->>>     close
->>>     settimeout
->>>     setoption
->>>     setkeepalive
->>>     getreusedtimes
+
+>>>      connect
+>>>      send
+>>>      receive
+>>>      close
+>>>      settimeout
+>>>      setoption
+>>>      setkeepalive
+>>>      getreusedtimes
 
 Install
 ------------------
