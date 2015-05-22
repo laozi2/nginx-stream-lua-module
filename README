@@ -1,0 +1,15 @@
+
+nginx tcp module (frame).
+nginx tcp demo module (process protocol example).
+nginx tcp lua module.
+
+the code is modify based on nginx 1.4.1
+
+Most code are copied from ngx-lua-module, and nginx tcp lua module(https://github.com/bigplum/nginx-tcp-lua-module)
+
+Thanks for great job of ngx-lua module & ngx-tcp-lua module.
+
+the details in src/tcp/doc/
+
+
+
