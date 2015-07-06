@@ -49,6 +49,8 @@ int ngx_tcp_lua_do_call(ngx_log_t *log, lua_State *L);
 
 int ngx_tcp_lua_traceback(lua_State *L);
 
+void ngx_tcp_lua_stack_dump(lua_State* L,const char* prefix);
+
 static ngx_inline ngx_tcp_session_t *
 ngx_tcp_lua_get_session(lua_State *L)
 {

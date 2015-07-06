@@ -94,6 +94,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/ngx_tcp_lua_sleep.c \
                 $ngx_addon_dir/ngx_tcp_lua_shdict.c \
                 $ngx_addon_dir/ngx_tcp_lua_initby.c \
+                $ngx_addon_dir/ngx_tcp_lua_socket_http.c \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \

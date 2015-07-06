@@ -1969,6 +1969,7 @@ failed:
 
     return NGX_CONF_ERROR;
 }
+
 static void ngx_clean_nlog_sock(void* data)
 {
     ngx_http_log_t  *log;
@@ -1976,6 +1977,7 @@ static void ngx_clean_nlog_sock(void* data)
     log = data;
     if (log->fd != -1) {
         ngx_close_socket(log->fd);
+        log->fd = -1;
     }
 }
 /*------------------------NLOG------------------------*/

@@ -21,7 +21,6 @@ static void ngx_tcp_lua_req_read_handler(ngx_tcp_session_t *s);
 static ngx_int_t ngx_tcp_lua_req_read(ngx_tcp_session_t *s, ngx_tcp_lua_ctx_t *ctx);
 static int ngx_tcp_lua_req_tcp_receive_retval_handler(ngx_tcp_session_t *s, lua_State *L);
 static int ngx_tcp_lua_req_error_retval_handler(ngx_tcp_session_t *s, lua_State *L);
-static void ngx_tcp_lua_check_client_abort_handler(ngx_tcp_session_t *s);
 static void ngx_tcp_lua_req_keepalive_handler(ngx_tcp_session_t *s);
 
 void
@@ -55,7 +54,7 @@ ngx_tcp_lua_ngx_print(lua_State *L)
 static int
 ngx_tcp_lua_ngx_say(lua_State *L)
 {
-    dd("calling");
+    dd("calling lua say");
     return ngx_tcp_lua_ngx_echo(L, 1);
 }
 
@@ -85,8 +84,8 @@ ngx_tcp_lua_ngx_echo(lua_State *L, unsigned newline)
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
                       "attempt to send data on a closed/invalid socket");
 
-        //lua_pushnil(L);
-        lua_pushnumber(L, (lua_Number) 0);
+        lua_pushnil(L);
+        //lua_pushnumber(L, (lua_Number) 0);
         lua_pushliteral(L, "closed");
         return 2;
     }
@@ -154,7 +153,9 @@ ngx_tcp_lua_ngx_echo(lua_State *L, unsigned newline)
 
     if (size == 0) {
         /* do nothing for empty strings */
-        return 0;
+        lua_pushnil(L);
+        lua_pushliteral(L, "will send nothing");
+        return 2;
     }
 
     b = ctx->buf_out;
@@ -255,7 +256,8 @@ ngx_tcp_lua_ngx_echo(lua_State *L, unsigned newline)
 
         //ngx_log_debug0(NGX_LOG_DEBUG_TCP, s->connection->log, 0,
         //               "lua socket receive done in a single run");
-        lua_pushliteral(L, "ok");
+        //lua_pushliteral(L, "ok");
+        lua_pushnil(L);
     }
     else if (n == NGX_AGAIN){
         //lua_pushnumber(L, (lua_Number) 0);
@@ -268,8 +270,6 @@ ngx_tcp_lua_ngx_echo(lua_State *L, unsigned newline)
         ctx->socket_invalid = 1;
         ctx->socket_errno = ngx_socket_errno;
         ngx_tcp_lua_req_error_retval_handler(s, L);
-        //lua_pushnumber(L, (lua_Number) 0);
-        //lua_pushliteral(L, "socket error");
     }
     
     if (ngx_pfree(s->pool, b->start) == NGX_OK) {
@@ -306,7 +306,7 @@ ngx_tcp_lua_ngx_receive(lua_State *L)
 
     bytes = lua_tointeger(L, 1);
     if (bytes <= 0) {
-        return luaL_argerror(L, 1, "bad argument < 0");
+        return luaL_argerror(L, 1, "bad argument <= 0");
     }
 
     if (1 == lua_isnumber(L, 2)) {
@@ -608,7 +608,6 @@ ngx_tcp_lua_req_resume(ngx_tcp_session_t *s)
             "lua run thread returned %d", rc);
 
     if (rc == NGX_ERROR || rc == NGX_OK) {
-        //ngx_tcp_finalize_session(s);
         ngx_tcp_lua_close_session(s);
         return;
     }
@@ -617,7 +616,7 @@ ngx_tcp_lua_req_resume(ngx_tcp_session_t *s)
     return;
 }
 
-static void
+void
 ngx_tcp_lua_check_client_abort_handler(ngx_tcp_session_t *s)
 {
     ngx_connection_t       *c;
@@ -626,6 +625,11 @@ ngx_tcp_lua_check_client_abort_handler(ngx_tcp_session_t *s)
     
     c = s->connection;
     ctx = s->ctx;
+    lscf = ngx_tcp_get_module_srv_conf(s, ngx_tcp_lua_module);
+
+    if (!lscf->check_client_abort) {
+        return;
+    }
 
     ngx_log_debug0(NGX_LOG_DEBUG_TCP, c->log, 0,
                    "lua socket check client abort handler");
@@ -641,13 +645,7 @@ ngx_tcp_lua_check_client_abort_handler(ngx_tcp_session_t *s)
         ctx->socket_errno = ngx_socket_errno;
         ctx->socket_invalid = 1;
         
-#if 1
-        lscf = ngx_tcp_get_module_srv_conf(s, ngx_tcp_lua_module);
-
-        if (lscf->check_client_abort) {
-            ngx_tcp_lua_close_session(s);
-        }
-#endif
+        ngx_tcp_lua_close_session(s);
     }
 }
 
@@ -662,8 +660,7 @@ ngx_tcp_lua_ngx_wait_next_request(lua_State *L)
 
     n = lua_gettop(L);
     if (n != 0) {
-        //return luaL_error(L, "expecting 1 arguments "
-        //                  "(including the object), but got %d", n);
+        return luaL_error(L, "expecting 0 arguments");
     }
 
     s = ngx_tcp_lua_get_session(L);
@@ -756,6 +753,7 @@ ngx_tcp_lua_req_keepalive_handler(ngx_tcp_session_t *s)
     if (!c->read->ready) {
         if (!c->error) {
             ngx_log_error(NGX_LOG_INFO, c->log, 0, "weird, no event call this function");
+			return;// XXX . add return due to this weird thing really happened.
         }
         ngx_tcp_lua_close_session(s);
         return;
@@ -765,7 +763,7 @@ ngx_tcp_lua_req_keepalive_handler(ngx_tcp_session_t *s)
     ngx_reusable_connection(c, 0);
     
     //s->write_event_handler = ngx_tcp_session_empty_handler;
-    s->read_event_handler = ngx_tcp_lua_check_client_abort_handler;;
+    s->read_event_handler = ngx_tcp_lua_check_client_abort_handler;
     
     if (rev->timer_set) {
         ngx_del_timer(rev);
@@ -789,8 +787,7 @@ ngx_tcp_lua_ngx_exit(lua_State *L)
     ngx_tcp_lua_ctx_t                  *ctx;
 
     if (lua_gettop(L) != 0) {
-        //return luaL_error(L, "expecting 1 arguments "
-        //                  "(including the object), but got %d", n);
+        return luaL_error(L, "expecting 0 arguments");
     }
 
     s = ngx_tcp_lua_get_session(L); 

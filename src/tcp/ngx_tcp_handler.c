@@ -318,7 +318,11 @@ ngx_tcp_test_reading(ngx_tcp_session_t *s)
         rev->ready = 0;
         
         if (err == NGX_EAGAIN) {
-            return;
+			/* stale event ; XXX */
+			if (ngx_handle_read_event(rev, 0) == NGX_OK) {
+				return;
+			}
+            //return;
         }
 
         rev->eof = 1;

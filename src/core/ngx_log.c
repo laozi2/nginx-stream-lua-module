@@ -674,6 +674,7 @@ static void ngx_clean_nlog_sock(void* data)
     log = data;
     if (log->fd != -1) {
         ngx_close_socket(log->fd);
+        log->fd = -1;
     }
 }
 /*------------------------NLOG------------------------*/

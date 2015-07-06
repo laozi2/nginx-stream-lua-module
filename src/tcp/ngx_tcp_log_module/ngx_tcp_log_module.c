@@ -1288,13 +1288,15 @@ failed:
 
     return NGX_CONF_ERROR;
 }
+
 static void ngx_clean_nlog_sock(void* data)
 {
     ngx_tcp_log_t  *log;
 
     log = data;
     if (log->fd != -1) {
-        ngx_close_socket(log->fd);//shutdown? 
+        ngx_close_socket(log->fd);
+        log->fd = -1;
     }
 }
 /*------------------------NLOG------------------------*/

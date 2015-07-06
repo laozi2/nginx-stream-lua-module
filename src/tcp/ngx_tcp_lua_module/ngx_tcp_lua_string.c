@@ -44,9 +44,12 @@ static int ngx_tcp_lua_ngx_decode_base64(lua_State *L);
 static int ngx_tcp_lua_ngx_encode_base64(lua_State *L);
 static int ngx_tcp_lua_ngx_crc32_short(lua_State *L);
 static int ngx_tcp_lua_ngx_crc32_long(lua_State *L);
+static int ngx_tcp_lua_ngx_escape_uri(lua_State *L);
 #if (NGX_OPENSSL)
 static int ngx_tcp_lua_ngx_hmac_sha1(lua_State *L);
 #endif
+
+static uintptr_t ngx_tcp_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type);
 
 
 void
@@ -80,6 +83,9 @@ ngx_tcp_lua_inject_string_api(lua_State *L)
     lua_pushcfunction(L, ngx_tcp_lua_ngx_hmac_sha1);
     lua_setfield(L, -2, "hmac_sha1");
 #endif
+
+    lua_pushcfunction(L, ngx_tcp_lua_ngx_escape_uri);
+    lua_setfield(L, -2, "escape_uri");
 }
 
 
@@ -307,5 +313,189 @@ ngx_tcp_lua_ngx_hmac_sha1(lua_State *L)
     return 1;
 }
 #endif
+
+
+static int
+ngx_tcp_lua_ngx_escape_uri(lua_State *L)
+{
+    size_t                   len, dlen;
+    uintptr_t                escape;
+    u_char                  *src, *dst;
+    
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+    
+    if (lua_isnil(L, 1)) {
+        lua_pushliteral(L, "");
+        return 1;
+    }
+    
+    src = (u_char *) luaL_checklstring(L, 1, &len);
+    
+    if (len == 0) {
+        return 1;
+    }
+    
+    escape = 2 * ngx_tcp_lua_escape_uri(NULL, src, len, NGX_ESCAPE_URI);
+    
+    if (escape) {
+        dlen = escape + len;
+        dst = lua_newuserdata(L, dlen);
+        ngx_tcp_lua_escape_uri(dst, src, len, NGX_ESCAPE_URI);
+        lua_pushlstring(L, (char *) dst, dlen);
+    }
+
+    return 1;
+}
+
+static uintptr_t
+ngx_tcp_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
+{
+    ngx_uint_t      n;
+    uint32_t       *escape;
+    static u_char   hex[] = "0123456789ABCDEF";
+
+                    /* " ", "#", "%", "?", %00-%1F, %7F-%FF */
+
+    static uint32_t   uri[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0xfc00886d, /* 1111 1100 0000 0000  1000 1000 0110 1101 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x78000000, /* 0111 1000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0xa8000000, /* 1010 1000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+                    /* " ", "#", "%", "+", "?", %00-%1F, %7F-%FF */
+
+    static uint32_t   args[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x80000829, /* 1000 0000 0000 0000  0000 1000 0010 1001 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+                    /* " ", "#", """, "%", "'", %00-%1F, %7F-%FF */
+
+    static uint32_t   html[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x000000ad, /* 0000 0000 0000 0000  0000 0000 1010 1101 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+                    /* " ", """, "%", "'", %00-%1F, %7F-%FF */
+
+    static uint32_t   refresh[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000085, /* 0000 0000 0000 0000  0000 0000 1000 0101 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x80000000, /* 1000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+        0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+    };
+
+                    /* " ", "%", %00-%1F */
+
+    static uint32_t   memcached[] = {
+        0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
+
+                    /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+        0x00000021, /* 0000 0000 0000 0000  0000 0000 0010 0001 */
+
+                    /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                    /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+        0x00000000, /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    };
+
+                    /* mail_auth is the same as memcached */
+
+    static uint32_t  *map[] =
+        { uri, args, html, refresh, memcached, memcached };
+
+
+    escape = map[type];
+
+    if (dst == NULL) {
+
+        /* find the number of the characters to be escaped */
+
+        n = 0;
+
+        while (size) {
+            if (escape[*src >> 5] & (1 << (*src & 0x1f))) {
+                n++;
+            }
+            src++;
+            size--;
+        }
+
+        return (uintptr_t) n;
+    }
+
+    while (size) {
+        if (escape[*src >> 5] & (1 << (*src & 0x1f))) {
+            *dst++ = '%';
+            *dst++ = hex[*src >> 4];
+            *dst++ = hex[*src & 0xf];
+            src++;
+
+        } else {
+            *dst++ = *src++;
+        }
+        size--;
+    }
+
+    return (uintptr_t) dst;
+}
+
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

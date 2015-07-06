@@ -134,12 +134,11 @@ config file example
     end
 
 Note:
->*  为尽可能减少资源消耗，提升效率，将请求的作用域划分为：以基于连接的会话 `connection_session` ， 和基于协议的请求 `light_session`. 二者区别在于： `connection_session` 在协程内运行lua脚本的正常(`ngx.exit()`,或程序执行完)或异常退出，将删除该协程，同时做一次强制垃圾收集，断开客户端连接，释放会话内存池和链接内存池。 `light_session` 仅打印日志，进入请求的keepalive状态，等待下一次请求。 函数 `ngx.wait_next_request()` 将结束当前`light_session`并等待下次请求。 因此推荐编程框架为
-
->>       while true do
->>              --...
->>           ngx.wait_next_request()
->>       end
+>*  为尽可能减少资源消耗，提升效率，将请求的作用域划分为：以基于连接的会话 `connection_session` ， 和基于协议的请求 `light_session`. 二者区别在于： `connection_session` 在协程内运行lua脚本的正常(`ngx.exit()`,或程序执行完)或异常退出，将删除该协程，同时做一次强制垃圾收集，断开客户端连接，释放会话内存池和连接内存池。 `light_session` 仅打印日志，进入请求的keepalive状态，等待下一次请求。 函数 `ngx.wait_next_request()` 将结束当前`light_session`并等待下次请求。 因此推荐编程框架为
+>>      while true do
+>>             --...
+>>          ngx.wait_next_request()
+>>      end
 
 Directives
 ------------------
@@ -343,7 +342,7 @@ Nginx API for Lua
 
 ### `ngx.say` 
 
->* **syntax**: ok, err = ngx.say(...) 
+>* **syntax**: send_bytes, err = ngx.say(...) 
 >* **context**: `process_by_lua*`
 >* **note**: Just as ngx.print but also emit a trailing newline. 
 
@@ -451,15 +450,14 @@ Nginx API for Lua
 >* **note**:
 >>*   The `connect_timeout`,`read_timeout`,`send_timeout` of tcpsock will default set by config command.
 >>*    Just like http  [http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) Creates and returns a TCP socket object (also known as one type of the "cosocket" objects). The following methods are supported on this object: 
-
->>>      connect
->>>      send
->>>      receive
->>>      close
->>>      settimeout
->>>      setoption
->>>      setkeepalive
->>>      getreusedtimes
+>>>     connect
+>>>     send
+>>>     receive
+>>>     close
+>>>     settimeout
+>>>     setoption
+>>>     setkeepalive
+>>>     getreusedtimes
 
 Install
 ------------------

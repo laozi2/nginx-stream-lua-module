@@ -9,6 +9,7 @@
 #include "ngx_tcp_lua_session.h"
 #include "ngx_tcp_lua_shdict.h"
 #include "ngx_tcp_lua_initby.h"
+#include "ngx_tcp_lua_req.h"
 
 static void ngx_tcp_lua_init_connection_handler(ngx_event_t *rev);
 static ngx_int_t ngx_tcp_lua_init_session(ngx_tcp_session_t* s);
@@ -200,8 +201,8 @@ ngx_tcp_lua_init_connection_handler(ngx_event_t *rev)
     }
 
     c->log->action = "ngx_tcp_lua_start_session";
-    
-    s->read_event_handler = ngx_tcp_session_empty_handler;
+
+    s->read_event_handler = ngx_tcp_lua_check_client_abort_handler;
     s->write_event_handler = ngx_tcp_session_empty_handler;
     rev->handler= ngx_tcp_session_handler;
     c->write->handler= ngx_tcp_session_handler;

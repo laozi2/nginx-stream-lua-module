@@ -112,8 +112,26 @@ struct ngx_tcp_lua_socket_upstream_s {
     unsigned                        eof:1;
 };
 
+#define NGX_TCP_LUA_SOCKET_FT_ERROR        0x0001
+#define NGX_TCP_LUA_SOCKET_FT_TIMEOUT      0x0002
+#define NGX_TCP_LUA_SOCKET_FT_CLOSED       0x0004
+#define NGX_TCP_LUA_SOCKET_FT_RESOLVER     0x0008
+#define NGX_TCP_LUA_SOCKET_FT_BUFTOOSMALL  0x0010
+#define NGX_TCP_LUA_SOCKET_FT_NOMEM        0x0020
+
+enum {
+    SOCKET_CTX_INDEX = 1,
+    SOCKET_KEY_INDEX = 2
+};
 
 //void ngx_tcp_lua_inject_req_socket_api(lua_State *L);
 void ngx_tcp_lua_inject_socket_api(ngx_log_t *log, lua_State *L);
+
+void ngx_tcp_lua_socket_handle_success(ngx_tcp_session_t *s,
+    ngx_tcp_lua_socket_upstream_t *u);
+void ngx_tcp_lua_socket_handle_error(ngx_tcp_session_t *s,
+    ngx_tcp_lua_socket_upstream_t *u, ngx_uint_t ft_type);
+
+int ngx_tcp_lua_socket_tcp_receive_http(lua_State *L);
 
 #endif

@@ -1,15 +1,12 @@
-
-nginx tcp module (frame).
-nginx tcp demo module (process protocol example).
-nginx tcp lua module.
-
-the code is modify based on nginx 1.4.1
-
-Most code are copied from ngx-lua-module, and nginx tcp lua module(https://github.com/bigplum/nginx-tcp-lua-module)
-
-Thanks for great job of ngx-lua module & ngx-tcp-lua module.
-
-the details in src/tcp/doc/
-
-
-
+基于nginx1.4.1开发。
+1. 日志： 新增 error_log, access_log 的网络日志功能。
+2. tcp 模块。 
+	tcp框架下自定义协议开发，模块示例 demo, token_cache
+3. 基于tcp框架的tcp_lua模块。参照 https://github.com/bigplum/nginx-tcp-lua-module
+	在基本代码框架上做调整：
+	3.1 将整个ngx_tcp_lua作为一个独立模块，而非整个tcp模块围绕tcp_lua模块开发。
+	3.2 鉴于一个连接上仅有一个客户端，将封装的socket上下游通用类分离出下游函数。socket类仅与上游交互。简化逻辑。
+	3.3 为提高效率，lua处理请求分为 连接会话和协议请求。充分利用keepalive。 具体参照文档和实现。
+	3.4 去掉接收数据时的模式匹配功能函数receiveutil，简化接收发送缓存的实现，使得对内存的控制更精确，内存资源管理更简单。
+	3.5 扩充init_by_lua功能和共享内存操作功能, ngx.sleep,ngx.exit等函数。
+	3.6 优化代码和修复已知bug.

@@ -379,7 +379,7 @@ ngx_tcp_lua_run_thread(lua_State *L, ngx_tcp_session_t *s,
                     return NGX_OK; //NGX_DONE
                 }
                 
-                lua_settop(cc, 0);
+                //lua_settop(cc, 0);
                 return NGX_AGAIN;
 
             case 0:
@@ -824,4 +824,47 @@ ngx_tcp_lua_traceback(lua_State *L)
     lua_pushinteger(L, 2);  /* skip this function and traceback */
     lua_call(L, 2, 1);  /* call debug.traceback */
     return 1;
+}
+
+//tmp
+void 
+ngx_tcp_lua_stack_dump(lua_State* L,const char* prefix)
+{
+    int i;
+    if(prefix){
+        printf("%s: ",prefix);
+    }
+
+    int top = lua_gettop(L);
+    if(top < 1){
+        printf("stack is empty\n");
+        return;
+    }
+    
+    printf("bottom----->top\n\t");
+    for(i=1;i<=top;i++){
+        int t = lua_type(L,i);
+        switch(t){
+        
+        case LUA_TSTRING:
+            printf("%d/%d[%s]",i,i-top-1,lua_tostring(L,i));
+            break;
+        
+        case LUA_TBOOLEAN:
+            printf(lua_toboolean(L,i)?"%d/%d[true]":"false",i,i-top-1);
+            break;
+            
+        case LUA_TNUMBER:
+            printf("%d/%d[%g]",i,i-top-1,lua_tonumber(L,i));
+            break;
+            
+        default:
+            printf("%d/%d[%s]",i,i-top-1,lua_typename(L,t));
+            break;
+        }
+        
+        printf("    ");
+    }
+    
+    printf("\n");
 }
