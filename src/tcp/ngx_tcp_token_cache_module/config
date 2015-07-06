@@ -1,0 +1,6 @@
+ngx_addon_name=ngx_tcp_token_cache_module
+TCP_MODULES="$TCP_MODULES ngx_tcp_token_cache_module"
+NGX_ADDON_SRCS="$NGX_ADDON_SRCS  \
+				$ngx_addon_dir/ngx_tcp_token_cache_module.c \
+				$ngx_addon_dir/ngx_tcp_token_cache_handler.c"
+NGX_ADDON_DEPS="$NGX_ADDON_DEPS $ngx_addon_dir/ngx_tcp_token_cache_module.h"
