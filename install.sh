@@ -7,5 +7,7 @@ export LUAJIT_INC=/usr/local/include/luajit-2.0
 			--with-http_stub_status_module \
 			--with-tcp \
 			--add-module=src/tcp/ngx_tcp_log_module \
+			--add-module=src/tcp/ngx_tcp_token_cache_module \
+			--add-module=src/ext/ngx_http_token_cache_module \
 			--add-module=src/tcp/ngx_tcp_demo_module \
 			--add-module=src/tcp/ngx_tcp_lua_module
