@@ -1,3 +1,0 @@
-ngx_addon_name=ngx_tcp_demo_module
-TCP_MODULES="$TCP_MODULES ngx_tcp_demo_module"
-NGX_ADDON_SRCS="$NGX_ADDON_SRCS $ngx_addon_dir/ngx_tcp_demo_module.c"
