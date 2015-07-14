@@ -1,32 +1,60 @@
-local client_sock = ngx.socket.tcp()
-client_sock:settimeout(5000,1000,3000)
+local http_config = {
+	["host"] = "127.0.0.1", --string
+	["port"] = 80, --number
+	["connect_timeout"] = 5000,  --number(ms,>0) or nil
+	["send_timeout"] = 5000,  --number(ms,>0) or nil
+	["read_timeout"] = 5000,  --number(ms,>0) or nil
+	["pool_name"] = nil, --"127.0.0.1:80", --string or nil
+	["pool_size"] = 50, --number or nil,default 50
+	["keepalive_timeout"] = nil, --number(ms,>0; =0unlimited) or nil,default 0
+	["max_head_size"] = 512, --number(>0), or nil default 512
+	["max_body_size"] = 2048, --number(>0), or nil default 4k
+}
 
-local DB_MAX_IDLE_TIME = 
-local DB_POOL_SIZE = 
+local requst_tb = {
+	["method"] = "GET", --GET POST HEAD
+	["uri"] = "/testa", --string
+	["args"] = {  --table or nil
+		["a"] = "1", --key,value must string
+		["b"] = "2",
+	},
+	["headers"] = { --table or nil
+		--not allow to set Content-Length,Transfer-Encoding,Connection
+		["X-IS-IP"] = "127.0.0.1",
+		["Host"] = "api.intsig.net",
+	},
+	["body"] = nil, -- POST:string or GET/HEAD:nil
+}
 
-local req_data = "GET /hello HTTP/1.1\r\nUser-Agent: TestLua\r\nHost: 127.0.0.1:8080\r\nAccept: */*\r\n\r\n"
-
-local test_http = function(u)
-	local ret,err = u:connect("127.0.0.1",8080)
-	local reuse = u:getreusedtimes()
-	nlog.info("connect : "..tostring(ret).." "..tostring(err).." "..tostring(reuse))
-	if not ret then 
+local test_http = function()
+	local httpsock = http.new()
+	
+	local ret,errmsg = httpsock:init(http_config)
+	nlog.info(tostring(ret).." "..tostring(errmsg))
+	if not ret then
 		return
 	end
-
-	ret,err = u:send(req_data)
-	nlog.info("send : "..tostring(ret).." "..tostring(err))
-
-	local ret_table,err = u:receive_http(512,1024*10)
-	nlog.info(type(ret_table).." "..tostring(err))
+	
+	local ret_table,errmsg = httpsock:http_request(requst_tb)
+	nlog.info(type(ret_table).." "..tostring(errmsg))
 	if type(ret_table) == "table" then
-		if type(ret_table["body"]) == "table" then
-			ret_table["body"] = table.concat(ret_table["body"])
-		end
-		local ret_js = cjson.encode(ret_table)
-		nlog.info(ret_js)
+		nlog.info(cjson.encode(ret_table))
 	end
-	u:setkeepalive()
+	
+	--ret,errmsg = httpsock:send_request(requst_tb)
+	--nlog.info(tostring(ret).." "..tostring(errmsg))
+	--if not ret then
+	--	httpsock:done(true)
+	--	return
+	--end
+	--
+	--local ret_table,errmsg = httpsock:receive_response()
+	--nlog.info(type(ret_table).." "..tostring(errmsg))
+	--if type(ret_table) == "table" then
+	--	nlog.info(cjson.encode(ret_table))
+	--end
+	
+	httpsock:done()
 end
 
 
@@ -41,7 +69,7 @@ while true do
 
 	--ngx.sleep(5)
 	
-	test_http(client_sock)
+	test_http()
 
 	--collectgarbage()
 	

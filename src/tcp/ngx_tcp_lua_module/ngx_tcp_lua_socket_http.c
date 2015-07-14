@@ -286,7 +286,7 @@ ngx_tcp_lua_socket_read_http(ngx_tcp_session_t *s,
         n = c->recv(c, b->last, size);
     
         dd("read event ready: %d", (int) c->read->ready);
-    
+
         ngx_log_debug2(NGX_LOG_DEBUG_TCP, s->connection->log, 0,
                     "lua socket recv returned %d: \"%p\"",
                     (int) n, s);

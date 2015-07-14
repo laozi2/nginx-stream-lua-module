@@ -7,6 +7,7 @@
 
 
 static char ngx_tcp_lua_tcp_socket_metatable_key;
+static char ngx_tcp_lua_upstream_udata_metatable_key;
 
 static int ngx_tcp_lua_socket_error_retval_handler(ngx_tcp_session_t *s,
     ngx_tcp_lua_socket_upstream_t *u, lua_State *L);
@@ -164,6 +165,14 @@ ngx_tcp_lua_inject_socket_api(ngx_log_t *log, lua_State *L)
     lua_setfield(L, -2, "__index");
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
+
+    /* {{{upstream userdata metatable */
+    lua_pushlightuserdata(L, &ngx_tcp_lua_upstream_udata_metatable_key);
+    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
+    lua_pushcfunction(L, ngx_tcp_lua_socket_upstream_destroy);
+    lua_setfield(L, -2, "__gc");
+    lua_rawset(L, LUA_REGISTRYINDEX);
+    /* }}} */
 }
 
 
@@ -195,9 +204,13 @@ ngx_tcp_lua_socket_tcp(lua_State *L)
         return luaL_error(L, "out of memory");
     }
 
-    lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
-    lua_pushcfunction(L, ngx_tcp_lua_socket_upstream_destroy);
-    lua_setfield(L, -2, "__gc");
+    //lua_createtable(L, 0 /* narr */, 1 /* nrec */); /* metatable */
+    //lua_pushcfunction(L, ngx_tcp_lua_socket_upstream_destroy);
+    //lua_setfield(L, -2, "__gc");
+    //lua_setmetatable(L, -2);
+
+    lua_pushlightuserdata(L, &ngx_tcp_lua_upstream_udata_metatable_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
     lua_setmetatable(L, -2);
 
     lua_rawseti(L, 1, SOCKET_CTX_INDEX);
@@ -1608,7 +1621,7 @@ ngx_tcp_lua_socket_handle_success(ngx_tcp_session_t *s,
     if (c->write->timer_set) {
         ngx_del_timer(c->write);
     }
-    
+
 #if 1
     u->read_event_handler = ngx_tcp_lua_socket_dummy_handler;
     u->write_event_handler = ngx_tcp_lua_socket_dummy_handler;
@@ -1876,7 +1889,8 @@ ngx_tcp_lua_socket_tcp_getreusedtimes(lua_State *L)
 }
 
 
-static int ngx_tcp_lua_socket_tcp_setkeepalive(lua_State *L)
+static int
+ngx_tcp_lua_socket_tcp_setkeepalive(lua_State *L)
 {
     ngx_tcp_lua_main_conf_t            *lmcf;
     ngx_tcp_lua_srv_conf_t             *lscf;
@@ -2109,14 +2123,15 @@ static int ngx_tcp_lua_socket_tcp_setkeepalive(lua_State *L)
     ngx_memcpy(&item->sockaddr, pc->sockaddr, pc->socklen);
     item->reused = u->reused;
 
-    if (c->read->ready) {
+    //if (c->read->ready) {
         rc = ngx_tcp_lua_socket_keepalive_close_handler(c->read);
         if (rc != NGX_OK) {
             lua_pushnil(L);
             lua_pushliteral(L, "connection in dubious state");
             return 2;
         }
-    }
+    //}
+
 
 #if 1
     ngx_tcp_lua_socket_finalize(s, u);

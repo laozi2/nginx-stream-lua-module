@@ -3,37 +3,37 @@ local nlog = {}
 
 nlog.fatal = function(str)
     local msg = string.char(0x1b) .. "[0;32m" .. ngx.localtime() .. " ERROR " .. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     sock:send(msg) 
 end
 
 nlog.error = function(str)
     local msg = string.char(0x1b) .. "[1;33m" .. ngx.localtime() .. " ERROR ".. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+             .. string.char(0x1b) .. "[0m\n"
     sock:send(msg) 
 end
 
 nlog.warn = function(str)
     local msg = string.char(0x1b) .. "[1;35m" .. ngx.localtime() .. " WARN ".. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+             .. string.char(0x1b) .. "[0m\n"
     sock:send(msg)
 end
 
 nlog.info = function(str)
     local msg = string.char(0x1b) .. "[1;32m" .. ngx.localtime() .. " INFO ".. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     sock:send(msg)
 end
 
 nlog.debug = function(str)
     local msg = string.char(0x1b) .. "[0;00m" .. ngx.localtime() .. " DEBUG ".. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     sock:send(msg) 
 end
 
 nlog.trace = function(str)
     local msg = string.char(0x1b) .. "[0;00m" .. ngx.localtime() .. " DEBUG ".. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     sock:send(msg) 
 end
 
@@ -50,68 +50,68 @@ end
 
 nlog.hfatal = function(str)
     local msg = string.char(0x1b) .. "[0;32m" .. ngx.localtime() .. " ERROR " .. nlog.tohex(str) 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     hsock:send(msg) 
 end
 
 nlog.herror = function(str)
     local msg = string.char(0x1b) .. "[1;33m" .. ngx.localtime() .. " ERROR ".. nlog.tohex(str) 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     hsock:send(msg) 
 end
 
 nlog.hwarn = function(str)
     local msg = string.char(0x1b) .. "[1;35m" .. ngx.localtime() .. " WARN ".. nlog.tohex(str) 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     hsock:send(msg)
 end
 
 nlog.hinfo = function(str)
     local msg = string.char(0x1b) .. "[1;32m" .. ngx.localtime() .. " INFO ".. nlog.tohex(str) 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     hsock:send(msg)
 end
 
 nlog.hdebug = function(str)
     local msg = string.char(0x1b) .. "[0;00m" .. ngx.localtime() .. " DEBUG ".. nlog.tohex(str) 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     hsock:send(msg) 
 end
 
 nlog.htrace = function(str)
     local msg = string.char(0x1b) .. "[0;00m" .. ngx.localtime() .. " DEBUG ".. nlog.tohex(str) 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     hsock:send(msg) 
 end
 
 
 nlog.dfatal = function(str)
     local msg = string.char(0x1b) .. "[0;32m" .. ngx.localtime() .. " ERROR " .. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     dsock:send(msg) 
 end
 
 nlog.derror = function(str)
     local msg = string.char(0x1b) .. "[1;33m" .. ngx.localtime() .. " ERROR ".. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     dsock:send(msg) 
 end
 
 nlog.dwarn = function(str)
     local msg = string.char(0x1b) .. "[1;35m" .. ngx.localtime() .. " WARN ".. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     dsock:send(msg)
 end
 
 nlog.dinfo = function(str)
     local msg = string.char(0x1b) .. "[1;32m" .. ngx.localtime() .. " INFO ".. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     dsock:send(msg)
 end
 
 nlog.ddebug = function(str)
     local msg = string.char(0x1b) .. "[0;00m" .. ngx.localtime() .. " DEBUG ".. str 
-            .. " \"" ..  --[[ngx.var.request ..--]] "\"" .. string.char(0x1b) .. "[0m\n"
+            .. string.char(0x1b) .. "[0m\n"
     dsock:send(msg) 
 end
 
@@ -132,7 +132,7 @@ nlog.sql = function(host, elapsed, sql)
     end
     
     local msg = ngx.localtime() .." " .. tostring(host) .. " " .. elapsed .. " [sql] " 
-          .. tostring(sql) .. " " .. --[[ngx.var.request ..--]] "\n"
+          .. tostring(sql) .. "\n"
 
     hsock:send(msg)
 end
