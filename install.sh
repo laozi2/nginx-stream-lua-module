@@ -1,4 +1,7 @@
 # yum -y install  -y pcre* openssl*
+# for pcre, such as ngx.gmatch etc, --with-pcre=you pcre lib path/pcre-8.36 --with-pcre-jit
+#
+#
 export LUAJIT_LIB=/usr/local/lib
 export LUAJIT_INC=/usr/local/include/luajit-2.0
 ./configure --prefix=/usr/local/nginx_tcp \

@@ -653,6 +653,8 @@ ngx_tcp_lua_socket_resolve_retval_handler(ngx_tcp_session_t *s,
         return 2;
     }
 
+    u->resolved = NULL;//XXX
+
     pc->get = ngx_tcp_lua_socket_tcp_get_peer;
 
     rc = ngx_event_connect_peer(pc);

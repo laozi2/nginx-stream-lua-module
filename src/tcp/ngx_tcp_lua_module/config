@@ -95,6 +95,9 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/ngx_tcp_lua_shdict.c \
                 $ngx_addon_dir/ngx_tcp_lua_initby.c \
                 $ngx_addon_dir/ngx_tcp_lua_socket_http.c \
+                $ngx_addon_dir/ngx_tcp_lua_pcrefix.c \
+                $ngx_addon_dir/ngx_tcp_lua_script.c \
+                $ngx_addon_dir/ngx_tcp_lua_regex.c \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
@@ -112,4 +115,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/ngx_tcp_lua_sleep.h \
                 $ngx_addon_dir/ngx_tcp_lua_shdict.h \
                 $ngx_addon_dir/ngx_tcp_lua_initby.h \
+                $ngx_addon_dir/ngx_tcp_lua_pcrefix.h \
+                $ngx_addon_dir/ngx_tcp_lua_script.h \
+                $ngx_addon_dir/ngx_tcp_lua_regex.h \
                 "

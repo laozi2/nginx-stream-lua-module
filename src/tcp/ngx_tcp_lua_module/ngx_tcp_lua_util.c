@@ -10,6 +10,8 @@
 #include "ngx_tcp_lua_session.h"
 #include "ngx_tcp_lua_sleep.h"
 #include "ngx_tcp_lua_shdict.h"
+#include "ngx_tcp_lua_pcrefix.h"
+#include "ngx_tcp_lua_regex.h"
 
 
 
@@ -18,6 +20,7 @@ char ngx_tcp_lua_ctx_tables_key;
 char ngx_tcp_lua_regex_cache_key;
 char ngx_tcp_lua_socket_pool_key;
 char ngx_tcp_lua_request_key;
+char ngx_tcp_lua_regex_cache_key;
 
 
 /*  coroutine anchoring table key in Lua vm registry */
@@ -94,6 +97,13 @@ ngx_tcp_lua_init_registry(ngx_conf_t *cf, lua_State *L)
     lua_rawset(L, LUA_REGISTRYINDEX);
     /* }}} */
 
+#if (NGX_PCRE)
+    /* create the registry entry for the Lua precompiled regex object cache */
+    lua_pushlightuserdata(L, &ngx_tcp_lua_regex_cache_key);
+    lua_createtable(L, 0, 16 /* nrec */);
+    lua_rawset(L, LUA_REGISTRYINDEX);
+#endif
+
 }
 
 
@@ -139,6 +149,10 @@ ngx_tcp_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_tcp_lua_inject_req_time_api(L);
 
     ngx_tcp_lua_inject_shdict_api(lmcf, L);
+
+#if (NGX_PCRE)
+    ngx_tcp_lua_inject_regex_api(L);
+#endif
 
     lua_getglobal(L, "package"); /* ngx package */
     lua_getfield(L, -1, "loaded"); /* ngx package loaded */
