@@ -1,7 +1,7 @@
 基于nginx1.4.1开发。
 1. 日志： 新增 error_log, access_log 的网络日志功能。
 2. tcp 模块。 
-	tcp框架下自定义协议开发，模块示例 demo, token_cache
+	tcp框架下自定义协议开发，模块示例 demo 
 3. 基于tcp框架的tcp_lua模块。参照 https://github.com/bigplum/nginx-tcp-lua-module
 	在基本代码框架上做调整：
 	3.1 将整个ngx_tcp_lua作为一个独立模块，而非整个tcp模块围绕tcp_lua模块开发。
