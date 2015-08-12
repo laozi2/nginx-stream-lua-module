@@ -15,13 +15,13 @@ local requst_tb = {
 	["method"] = "GET", --GET POST HEAD
 	["uri"] = "/testa", --string
 	["args"] = {  --table or nil
-		["a"] = "1", --key,value must string
-		["b"] = "2",
+		["a"] = "a?dsaf& +x", --key,value must string
+		--["sleep"] = "5",
 	},
 	["headers"] = { --table or nil
 		--not allow to set Content-Length,Transfer-Encoding,Connection
 		["X-IS-IP"] = "127.0.0.1",
-		["Host"] = "api.intsig.net",
+		["Host"] = "api-sandbox.xxxxx.net",
 	},
 	["body"] = nil, -- POST:string or GET/HEAD:nil
 }

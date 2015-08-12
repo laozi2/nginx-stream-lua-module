@@ -2,10 +2,6 @@
 #include "ngx_tcp_lua_util.h"
 #include "ngx_tcp_lua_session.h"
 
-/*
-    边解析边放到lua里
-    不支持先后一次发多次http请求
-*/
 
 #define NGX_TCP_LUA_SOCKET_ERR_STATUSLINE 0x01
 #define NGX_TCP_LUA_SOCKET_ERR_HEADERS    0x02

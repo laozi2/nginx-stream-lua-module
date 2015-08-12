@@ -9,6 +9,12 @@ mysql = require "mysql"
 db_ml = require "db_ml"
 http = require "http"
 
+-----http load balance---
+upstream_conf = require "load_balance/upstream_conf"
+load_balance = require "load_balance/load_balance"
+load_balance.check_config_all(upstream_conf)
+http_lb = require "load_balance/http_lb"
+
 nlog = require "nlog"
 socket = require("socket")
 sock = socket.udp()

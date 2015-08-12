@@ -74,23 +74,55 @@ local test_shm = function()
 	if use_log then ngx.log(ngx.INFO,tostring(shm_value)) end
 end
 
+local test_pcre = function()
+    local m, err = ngx.re.match("hello, 1234", "[0-9]+", "oj")
+    if m then
+        -- m[0] == "1234"
+ 
+	ngx.say(cjson.encode(m))
+    else
+        if err then
+            ngx.log(ngx.ERR, "error: ", err)
+            return
+        end
+ 
+        ngx.say("match not found")
+    end
+
+end
+
+local i = 0
 while true do
-	local data,r2,r3 = ngx.receive(10,6)
+	local data,r2,r3 = ngx.receive(10,nil)
 	--ngx.say(collectgarbage("count"))
-	ngx.say("receive ret "..tostring(data).." "..tostring(r2).." "..tostring(r3) .. ","..collectgarbage("count"))
+	--ngx.say("receive ret "..tostring(data).." "..tostring(r2).." "..tostring(r3) .. ","..collectgarbage("count"))
+	--local send_bytes,errmsg = ngx.print(ngx.OK)
+	--nlog.info(tostring(send_bytes) .. " , " .. tostring(errmsg))
 	if not data then
-			ngx.say("exit")
-			ngx.exit()
+		ngx.say("exit")
+		ngx.exit()
 	end
+
+	--local str = "!  @ # $ % ^ & * () = + : ; .  \" ' \\ / ?  < > ~ [ ] { } `"
+	--local a = ngx.escape_uri(str)
+	--ngx.print(a)
 
 	--ngx.sleep(5)
 	
 	--upstream_test(client_sock)
 
-	test_shm()
+	--test_shm()
+	
+	test_pcre()
 	
 	--collectgarbage()
+	--ngx.say("aaa",21,nil,true,false,{"a","b"})
 	
+        --ngx.print("0123456789")
+	--i = i + 1
+	--if i == 9 then
+	--	ngx.exit()
+	--end	
 	ngx.wait_next_request()
 end
 

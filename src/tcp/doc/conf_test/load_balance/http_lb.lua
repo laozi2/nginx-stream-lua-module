@@ -1,5 +1,7 @@
---http module
+--http module, load_balance version
 --need nlog.lua if use_log = true
+
+local load_balance = require "load_balance/load_balance"
 
 -- constants
 
@@ -12,10 +14,6 @@ local USER_AGENT = "resty-agent"
 local CRLF = "\r\n"
 local STATE_CONNECTED = 1
 local STATE_REQUEST_SENT = 2
-local DEFAULT_MAX_HEAD_SIZE = 512
-local DEFAULT_MAX_BODY_SIZE = 4096
-local DEFAULT_KEEPALIVE_TIMEDOUT = 0 --no timedout
-local DEFAULT_POOL_SIZE = 50
 
 
 local tcp = ngx.socket.tcp
@@ -46,7 +44,7 @@ req_tb:
         "method":"GET", --GET POST HEAD
         "uri":"/hello", --string
         "args":{  --table or nil
-                "a":"1", --key,value must string, value must not be escaped.
+                "a":"1", --key,value must string
                 "b":"2",
             },
         "headers":{ --table or nil
@@ -108,51 +106,85 @@ function _M.new()
     --if not sock then
     --    return nil, err
     --end
-    return setmetatable({ sock = sock }, mt)
+    return setmetatable({ ["sock"] = sock , ["tries"] = 0 }, mt)
 end
 
 --[[
     opts:
-    {
-        "host":"127.0.0.1", --string
-        "port":80, --number
-        "connect_timeout":5000,  --number(ms,>0) or nil
-        "send_timeout":5000,  --number(ms,>0) or nil
-        "read_timeout":5000,  --number(ms,>0) or nil
-        "pool_name":"127.0.0.1:80", --string or nil(set by host:port)
-        "pool_size":50, --number or nil,default 50
-        "keepalive_timeout":60000, --number(ms,>0; =0unlimited) or nil,default 0
-        "max_head_size":512, --number(>0), or nil default 512
-        "max_body_size":4096, --number(>0), or nil default 4k
-    }
+    ["server"] = {
+        {
+            ["host"] = "192.168.1.23", --string
+            ["port"] = 80,  --number
+            ["weight"] = 3, -- number >=0
+            ["connect_timeout"] = 5000,  --number(ms,>0) or nil
+            ["send_timeout"] = 5000,  --number(ms,>0) or nil
+            ["read_timeout"] = 5000,  --number(ms,>0) or nil
+            ["pool_name"] = nil, --"127.0.0.1:80", --string or nil
+            ["pool_size"] = 50, --number or nil,default 50
+            ["keepalive_timeout"] = nil, --number(ms,>0; =0unlimited) or nil,default 0
+            ["max_head_size"] = 512, --number(>0), or nil default 512
+            ["max_body_size"] = 2048, --number(>0), or nil default 4k
+        },
+        {
+            ["host"] = "192.168.1.24", 
+            ["port"] = 80,
+            ["weight"] = 1, -- >=0
+            ["connect_timeout"] = 5000,  --number(ms,>0) or nil
+            ["send_timeout"] = 5000,  --number(ms,>0) or nil
+            ["read_timeout"] = 5000,  --number(ms,>0) or nil
+            ["pool_name"] = nil, --"127.0.0.1:80", --string or nil
+            ["pool_size"] = 50, --number or nil,default 50
+            ["keepalive_timeout"] = nil, --number(ms,>0; =0unlimited) or nil,default 0
+            ["max_head_size"] = 512, --number(>0), or nil default 512
+            ["max_body_size"] = 2048, --number(>0), or nil default 4k
+        },
+    },
+    ["failed_time"] = 60, -- number, second, max abandon time when marked down
+    ["try_times"] = 3, -- number >= 1
+    ["failed_connect"] = true, -- bool
+    ["failed_send"] = true, -- bool
+    ["failed_read"] = false, -- bool
     
     return (nil,errmsg) or (1,"ok")
 --]]
+
 function _M.init(self, opts)
     local sock = self.sock
     if not sock then
         return nil, "not initialized"
     end
-    
-    sock:settimeout(opts.connect_timeout,opts.send_timeout,opts.read_timeout)
 
-    if opts.pool_name == nil then
-        opts.pool_name = opts.host .. ":" .. opts.port
+    local ok, errmsg = load_balance.check_config(opts)
+    if not ok then
+        return nil, errmsg
     end
     
-    local retcode,errmsg = sock:connect(opts.host,opts.port,opts.pool_name)
+    self.tries = self.tries + 1
+    if self.tries > opts["max_tries"] then
+        return nil, "exceed max tries"
+    end
+    
+    local conf_pos = load_balance.calculate_server(opts)
+    
+    sock:settimeout(opts["server"][conf_pos]["connect_timeout"],opts["server"][conf_pos]["send_timeout"],opts["server"][conf_pos]["read_timeout"])
+    
+    local retcode,errmsg = sock:connect(opts["server"][conf_pos]["host"],opts["server"][conf_pos]["port"],opts["server"][conf_pos]["pool_name"])
     if not retcode then
         if use_log then
-            nlog.derror("connect failed : "..tostring(errmsg))
+            nlog.derror("connect " .. opts["server"][conf_pos]["pool_name"] .. " failed : "..tostring(errmsg))
         end
-        return nil,errmsg
+        load_balance.set_status(opts, conf_pos, false)
+        return self.init(self, opts)
     end
-    
+
+    self.tries = 0
+    load_balance.set_status(opts, conf_pos, true)
+
     self.state = STATE_CONNECTED
-    self.keepalive_timeout = opts.keepalive_timeout or DEFAULT_KEEPALIVE_TIMEDOUT
-    self.pool_size = opts.pool_size or DEFAULT_POOL_SIZE
-    self.max_head_size = opts.max_head_size or DEFAULT_MAX_HEAD_SIZE
-    self.max_body_size = opts.max_body_size or DEFAULT_MAX_BODY_SIZE
+    self.keepalive_timeout = opts["server"][conf_pos]["keepalive_timeout"]
+    self.pool_size = opts["server"][conf_pos]["pool_size"]
+    self.max_head_size = opts["server"][conf_pos]["max_head_size"]
+    self.max_body_size = opts["server"][conf_pos]["max_body_size"]
     return 1,"ok"
 end
 
