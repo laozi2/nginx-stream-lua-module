@@ -2,15 +2,84 @@
 #include "ngx_tcp_lua_log.h"
 #include "ngx_tcp_lua_util.h"
 
-
 static int ngx_tcp_lua_print(lua_State *L);
 static int ngx_tcp_lua_ngx_log(lua_State *L);
+static int ngx_tcp_lua_ngx_nlog(lua_State *L);
+static int ngx_tcp_lua_nlog_send(lua_State *L);
+static int ngx_tcp_lua_nlog_destroy(lua_State *L);
+
+static char ngx_tcp_lua_nlog_udata_metatable_key;
 
 
 static int log_wrapper(ngx_tcp_session_t *s, const char *ident,
         ngx_uint_t level, lua_State *L);
 
 static void ngx_tcp_lua_inject_log_consts(lua_State *L);
+
+void
+ngx_tcp_lua_inject_log_api(lua_State *L)
+{
+    ngx_tcp_lua_inject_log_consts(L);
+
+    lua_pushcfunction(L, ngx_tcp_lua_ngx_log);
+    lua_setfield(L, -2, "log");
+
+    lua_pushcfunction(L, ngx_tcp_lua_print);
+    lua_setglobal(L, "print");
+
+    lua_pushcfunction(L, ngx_tcp_lua_ngx_nlog);
+    lua_setfield(L, -2, "nlog");
+
+    /* {{{nlog object metatable */
+    lua_pushlightuserdata(L, &ngx_tcp_lua_nlog_udata_metatable_key);
+    lua_createtable(L, 0 /* narr */, 3 /* nrec */);
+
+    lua_pushcfunction(L, ngx_tcp_lua_nlog_send);
+    lua_setfield(L, -2, "send");
+
+    lua_pushvalue(L, -1);
+    lua_setfield(L, -2, "__index");
+
+    lua_pushcfunction(L, ngx_tcp_lua_nlog_destroy);
+    lua_setfield(L, -2, "__gc");
+
+    lua_rawset(L, LUA_REGISTRYINDEX);
+    /* }}} */
+}
+
+
+static void
+ngx_tcp_lua_inject_log_consts(lua_State *L)
+{
+    /* {{{ nginx log level constants */
+    lua_pushinteger(L, NGX_LOG_STDERR);
+    lua_setfield(L, -2, "STDERR");
+
+    lua_pushinteger(L, NGX_LOG_EMERG);
+    lua_setfield(L, -2, "EMERG");
+
+    lua_pushinteger(L, NGX_LOG_ALERT);
+    lua_setfield(L, -2, "ALERT");
+
+    lua_pushinteger(L, NGX_LOG_CRIT);
+    lua_setfield(L, -2, "CRIT");
+
+    lua_pushinteger(L, NGX_LOG_ERR);
+    lua_setfield(L, -2, "ERR");
+
+    lua_pushinteger(L, NGX_LOG_WARN);
+    lua_setfield(L, -2, "WARN");
+
+    lua_pushinteger(L, NGX_LOG_NOTICE);
+    lua_setfield(L, -2, "NOTICE");
+
+    lua_pushinteger(L, NGX_LOG_INFO);
+    lua_setfield(L, -2, "INFO");
+
+    lua_pushinteger(L, NGX_LOG_DEBUG);
+    lua_setfield(L, -2, "DEBUG");
+    /* }}} */
+}
 
 
 /**
@@ -246,51 +315,170 @@ log_wrapper(ngx_tcp_session_t *s, const char *ident, ngx_uint_t level,
     return 0;
 }
 
-
-void
-ngx_tcp_lua_inject_log_api(lua_State *L)
+static int
+ngx_tcp_lua_ngx_nlog(lua_State *L)
 {
-    ngx_tcp_lua_inject_log_consts(L);
+    ngx_tcp_session_t          *ps;
+    ngx_socket_t               *u;
+    ngx_url_t                   u_l;
+    ngx_url_t                   u_r;
+    ngx_socket_t                s;
+    u_char                     *p;
+    size_t                      len;
+    int                         reuseaddr;
 
-    lua_pushcfunction(L, ngx_tcp_lua_ngx_log);
-    lua_setfield(L, -2, "log");
+    ps = ngx_tcp_lua_get_session(L);
+    if (ps != NULL) { //only in init_by_lua
+        return luaL_error(L, "only use in init_by_lua");
+    }
 
-    lua_pushcfunction(L, ngx_tcp_lua_print);
-    lua_setglobal(L, "print");
+    if (lua_gettop(L) != 2) {
+        return luaL_error(L, "expecting 2 arguments, but got %d",
+                lua_gettop(L));
+    }
+
+    //check and parse args
+    p = (u_char *) luaL_checklstring(L, 1, &len);
+    if (p == NULL) {
+        return luaL_argerror(L, 1, "bad argument, string expected");
+    }
+
+    ngx_memzero(&u_l, sizeof(ngx_url_t));
+    u_l.url.data = p;
+    u_l.url.len = len;
+    u_l.default_port = (in_port_t) 0;
+    u_l.no_resolve = 1;
+
+    //use ngx_cycle pool
+    if (ngx_parse_url(ngx_cycle->pool, &u_l) != NGX_OK) {
+        return luaL_argerror(L, 1, "bad argument, wrong format of ip:port");
+    }
+
+    if (u_l.no_port || u_l.family != AF_INET) {
+        return luaL_argerror(L, 1, "bad argument, wrong format of ip:port");
+    }
+    
+    p = (u_char *) luaL_checklstring(L, 2, &len);
+    if (p == NULL) {
+        return luaL_argerror(L, 2, "bad argument, string expected");
+    }
+
+    ngx_memzero(&u_r, sizeof(ngx_url_t));
+    u_r.url.data = p;
+    u_r.url.len = len;
+    u_r.default_port = (in_port_t) 0;
+    u_r.no_resolve = 1;
+
+    if (ngx_parse_url(ngx_cycle->pool, &u_r) != NGX_OK) {
+        return luaL_argerror(L, 2, "bad argument, wrong format of ip:port");
+    }
+    
+    if (u_r.no_port || u_r.family != AF_INET) {
+        return luaL_argerror(L, 2, "bad argument, wrong format of ip:port");
+    }
+
+    //create socket
+    s = ngx_socket(AF_INET, SOCK_DGRAM, 0);
+
+    if (s == -1) {
+        return luaL_error(L, "ngx_socket failed");
+    }
+
+    if (ngx_nonblocking(s) == -1) {        
+        ngx_close_socket(s);
+        return luaL_error(L, "ngx_nonblocking failed");
+    }
+
+    reuseaddr = 1;
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
+                           (const void *) &reuseaddr, sizeof(int))
+                == -1) {
+        ngx_close_socket(s);
+        return luaL_error(L, "setsockopt SO_REUSEADDR failed");
+    }
+
+    if (bind(s, (struct sockaddr_in*) &u_l.sockaddr, u_l.socklen) == -1) {
+        ngx_close_socket(s);
+        return luaL_error(L, "bind failed");
+    }
+    
+    if (connect(s, (struct sockaddr_in*) &u_r.sockaddr, u_r.socklen) == -1) {
+        ngx_close_socket(s);
+        return luaL_error(L, "connect failed");
+    }
+
+    u = lua_newuserdata(L, sizeof(ngx_socket_t));
+    if (u == NULL) {
+        ngx_close_socket(s);
+        return luaL_error(L, "out of memory");
+    }
+
+    *u = s;
+
+    lua_pushlightuserdata(L, &ngx_tcp_lua_nlog_udata_metatable_key);
+    lua_rawget(L, LUA_REGISTRYINDEX);
+    lua_setmetatable(L, -2);
+
+    return 1;
 }
 
-
-static void
-ngx_tcp_lua_inject_log_consts(lua_State *L)
+static int
+ngx_tcp_lua_nlog_send(lua_State *L)
 {
-    /* {{{ nginx log level constants */
-    lua_pushinteger(L, NGX_LOG_STDERR);
-    lua_setfield(L, -2, "STDERR");
-
-    lua_pushinteger(L, NGX_LOG_EMERG);
-    lua_setfield(L, -2, "EMERG");
-
-    lua_pushinteger(L, NGX_LOG_ALERT);
-    lua_setfield(L, -2, "ALERT");
-
-    lua_pushinteger(L, NGX_LOG_CRIT);
-    lua_setfield(L, -2, "CRIT");
-
-    lua_pushinteger(L, NGX_LOG_ERR);
-    lua_setfield(L, -2, "ERR");
-
-    lua_pushinteger(L, NGX_LOG_WARN);
-    lua_setfield(L, -2, "WARN");
-
-    lua_pushinteger(L, NGX_LOG_NOTICE);
-    lua_setfield(L, -2, "NOTICE");
-
-    lua_pushinteger(L, NGX_LOG_INFO);
-    lua_setfield(L, -2, "INFO");
-
-    lua_pushinteger(L, NGX_LOG_DEBUG);
-    lua_setfield(L, -2, "DEBUG");
-    /* }}} */
+    ngx_socket_t      *u;
+    ngx_socket_t       s;
+    u_char            *p;
+    size_t             len;
+    int                n;
+    
+    if (lua_gettop(L) != 2) {
+        return luaL_error(L, "expecting 1 arguments, but got %d",
+                lua_gettop(L));
+    }
+    
+    u = lua_touserdata(L, 1);
+    if (u == NULL) {
+        return luaL_error(L, "wrong nlog object");
+    }
+    
+    s = *u;
+    if (s == -1) {
+        return luaL_error(L, "uninited nlog object");
+    }
+    
+    p = (u_char *) lua_tolstring(L, 2, &len);
+    if (p == NULL || len <= 0) {
+        return luaL_error(L, "nlog only send string");
+    }
+    
+    n = send(s, p, len, 0);
+    
+    lua_pushnumber(L, (lua_Number) n);
+    
+    return 1;
 }
+
+static int
+ngx_tcp_lua_nlog_destroy(lua_State *L)
+{
+    ngx_socket_t      *u;
+    ngx_socket_t       s;
+
+    u = lua_touserdata(L, 1);
+    if (u == NULL) {
+        return 0;
+    }
+
+    s = *u;
+    if (s == -1) {
+        return 0;
+    }
+
+    ngx_close_socket(s);
+    *u = -1;
+
+    return 0;
+}
+
 
 

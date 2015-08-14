@@ -60,8 +60,8 @@ end
 
 
 while true do
-	local data,r2,r3 = ngx.receive(10,6)
-	ngx.say("receive ret "..tostring(data).." "..tostring(r2).." "..tostring(r3) .. ","..collectgarbage("count"))
+	local data,r2,r3 = ngx.receive(10,nil)
+	--ngx.say("receive ret "..tostring(data).." "..tostring(r2).." "..tostring(r3) .. ","..collectgarbage("count"))
 	if not data then
 		ngx.say("exit")
 		ngx.exit()
@@ -72,6 +72,7 @@ while true do
 	test_http()
 
 	--collectgarbage()
+	ngx.say("receive ret "..tostring(data).." "..tostring(r2).." "..tostring(r3) .. ","..collectgarbage("count"))
 	
 	ngx.wait_next_request()
 end

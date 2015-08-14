@@ -91,6 +91,22 @@ local test_pcre = function()
 
 end
 
+
+local test_nlog = function()
+	for k,v in pairs(nlog) do
+		if k == "init" then
+
+		elseif k == "sql" then
+			v("host", 10.12, "sql")
+		elseif k == "http" then
+			v("host", "uri", 2.292, "errmsg")
+		elseif type(v) == "function" then
+			v("test ".. k)
+		end
+	end
+
+end
+
 local i = 0
 while true do
 	local data,r2,r3 = ngx.receive(10,nil)
@@ -113,7 +129,8 @@ while true do
 
 	--test_shm()
 	
-	test_pcre()
+	--test_pcre()
+	test_nlog()
 	
 	--collectgarbage()
 	--ngx.say("aaa",21,nil,true,false,{"a","b"})

@@ -1,7 +1,16 @@
---db_ml module
---need mysql.lua,nlog.lua
+-----------------------------------------
+--Module: db_ml module, load_balance version
+--Author: xxh
+--Date: 
+-----------------------------------------
 
-local _M = {_VERSION = '0'}
+local nlog = require("nlog")
+local mysql = require("mysql")
+
+module("db_ml", package.seeall)
+
+
+_M["_VERSION"] = '0'
 local mt = {__index = _M}
 
 local LOCK_EXPTIME = 5
@@ -12,7 +21,7 @@ local DEFAULT_READ_TIMEOUT = 5000
 local DEFAULT_KEEPALIVE_TIMEDOUT = 0 --no timedout
 local DEFAULT_POOL_SIZE = 10
 
-function _M.new()
+function new()
     local db, err = mysql:new()
     --if not db then
     --    local error_string = "failed to instantiate mysql: " .. tostring(err)
@@ -45,7 +54,7 @@ end
         "keepalive_timeout":60000, --number(ms,>0; =0unlimited) or nil,default 0
     }
 --]]
-function _M.init(self, opts)
+function init(self, opts)
     local db = self.db
     if not db then
         return nil, "not initialized"
@@ -66,7 +75,7 @@ function _M.init(self, opts)
     return 1,"ok"
 end
 
-function _M.query(self, sql)
+function query(self, sql)
     local db = self.db
     if not db then
         return nil, "not initialized"
@@ -85,7 +94,7 @@ function _M.query(self, sql)
     return res,err, errno, sqlstate
 end
 
-function _M.done(self, close)
+function done(self, close)
     local db = self.db
     if not db then
         return nil, "not initialized"
@@ -98,4 +107,3 @@ function _M.done(self, close)
     return db:set_keepalive(self.keepalive_timeout,self.pool_size)  --1, or nil,closed
 end
 
-return _M
