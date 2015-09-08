@@ -112,6 +112,7 @@ MAIL_SMTP=YES
 
 #TCP
 TCP=NO
+TCP_SSL=NO
 
 NGX_ADDONS=
 
@@ -273,6 +274,7 @@ use the \"--without-http_limit_conn_module\" option instead"
 
         #TCP
         --with-tcp)                      TCP=YES                    ;;
+        --with-tcp_ssl_module)           TCP_SSL=YES                ;;
 
         --with-google_perftools_module)  NGX_GOOGLE_PERFTOOLS=YES   ;;
         --with-cpp_test_module)          NGX_CPP_TEST=YES           ;;
@@ -422,6 +424,7 @@ cat << END
   --without-http-cache               disable HTTP cache
   
   --with-tcp                         enable tcp server
+  --with-tcp_ssl_module              enable ngx_tcp_ssl_module
 
   --with-mail                        enable POP3/IMAP4/SMTP proxy module
   --with-mail_ssl_module             enable ngx_mail_ssl_module

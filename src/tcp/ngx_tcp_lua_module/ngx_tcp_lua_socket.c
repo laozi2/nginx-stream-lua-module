@@ -1555,7 +1555,7 @@ ngx_tcp_lua_socket_send(ngx_tcp_session_t *s,
     //}
     
     size = b->last - b->pos;
-    if (size <= 0){
+    if (size <= 0) {
         //nothing to send
         return NGX_OK;
     }

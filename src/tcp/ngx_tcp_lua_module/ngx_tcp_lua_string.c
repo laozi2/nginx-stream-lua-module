@@ -50,7 +50,8 @@ static int ngx_tcp_lua_ngx_hmac_sha1(lua_State *L);
 #endif
 
 static uintptr_t ngx_tcp_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type);
-
+static uintptr_t ngx_tcp_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size);
+static int ngx_tcp_lua_ngx_quote_sql_str(lua_State *L);
 
 void
 ngx_tcp_lua_inject_string_api(lua_State *L)
@@ -86,6 +87,9 @@ ngx_tcp_lua_inject_string_api(lua_State *L)
 
     lua_pushcfunction(L, ngx_tcp_lua_ngx_escape_uri);
     lua_setfield(L, -2, "escape_uri");
+
+    lua_pushcfunction(L, ngx_tcp_lua_ngx_quote_sql_str);
+    lua_setfield(L, -2, "quote_sql_str");
 }
 
 
@@ -497,5 +501,150 @@ ngx_tcp_lua_escape_uri(u_char *dst, u_char *src, size_t size, ngx_uint_t type)
     return (uintptr_t) dst;
 }
 
+static int
+ngx_tcp_lua_ngx_quote_sql_str(lua_State *L)
+{
+    size_t                   len, dlen, escape;
+    u_char                  *p;
+    u_char                  *src, *dst;
+
+    if (lua_gettop(L) != 1) {
+        return luaL_error(L, "expecting one argument");
+    }
+
+    src = (u_char *) luaL_checklstring(L, 1, &len);
+
+    if (len == 0) {
+        dst = (u_char *) "''";
+        dlen = sizeof("''") - 1;
+        lua_pushlstring(L, (char *) dst, dlen);
+        return 1;
+    }
+
+    escape = ngx_tcp_lua_ngx_escape_sql_str(NULL, src, len);
+
+    dlen = sizeof("''") - 1 + len + escape;
+
+    p = lua_newuserdata(L, dlen);
+
+    dst = p;
+
+    *p++ = '\'';
+
+    if (escape == 0) {
+        p = ngx_copy(p, src, len);
+
+    } else {
+        p = (u_char *) ngx_tcp_lua_ngx_escape_sql_str(p, src, len);
+    }
+
+    *p++ = '\'';
+
+    if (p != dst + dlen) {
+        return NGX_ERROR;
+    }
+
+    lua_pushlstring(L, (char *) dst, p - dst);
+
+    return 1;
+}
+
+
+static uintptr_t
+ngx_tcp_lua_ngx_escape_sql_str(u_char *dst, u_char *src, size_t size)
+{
+    ngx_uint_t               n;
+
+    if (dst == NULL) {
+        /* find the number of chars to be escaped */
+        n = 0;
+        while (size) {
+            /* the highest bit of all the UTF-8 chars
+             * is always 1 */
+            if ((*src & 0x80) == 0) {
+                switch (*src) {
+                    case '\0':
+                    case '\b':
+                    case '\n':
+                    case '\r':
+                    case '\t':
+                    case 26:  /* \z */
+                    case '\\':
+                    case '\'':
+                    case '"':
+                        n++;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            src++;
+            size--;
+        }
+
+        return (uintptr_t) n;
+    }
+
+    while (size) {
+        if ((*src & 0x80) == 0) {
+            switch (*src) {
+                case '\0':
+                    *dst++ = '\\';
+                    *dst++ = '0';
+                    break;
+
+                case '\b':
+                    *dst++ = '\\';
+                    *dst++ = 'b';
+                    break;
+
+                case '\n':
+                    *dst++ = '\\';
+                    *dst++ = 'n';
+                    break;
+
+                case '\r':
+                    *dst++ = '\\';
+                    *dst++ = 'r';
+                    break;
+
+                case '\t':
+                    *dst++ = '\\';
+                    *dst++ = 't';
+                    break;
+
+                case 26:
+                    *dst++ = '\\';
+                    *dst++ = 'z';
+                    break;
+
+                case '\\':
+                    *dst++ = '\\';
+                    *dst++ = '\\';
+                    break;
+
+                case '\'':
+                    *dst++ = '\\';
+                    *dst++ = '\'';
+                    break;
+
+                case '"':
+                    *dst++ = '\\';
+                    *dst++ = '"';
+                    break;
+
+                default:
+                    *dst++ = *src;
+                    break;
+            }
+        } else {
+            *dst++ = *src;
+        }
+        src++;
+        size--;
+    } /* while (size) */
+
+    return (uintptr_t) dst;
+}
 
 /* vi:set ft=c ts=4 sw=4 et fdm=marker: */

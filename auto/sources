@@ -547,8 +547,12 @@ NGX_CPP_TEST_SRCS=src/misc/ngx_cpp_test_module.cpp
 #TCP MODULES
 TCP_MODULES="ngx_tcp_module ngx_tcp_core_module"
 
-TCP_INCS="src/tcp"
+TCP_INCS="src/tcp src/tcp/ngx_tcp_ssl_module"
 TCP_DEPS="src/tcp/ngx_tcp.h"
 TCP_SRCS="src/tcp/ngx_tcp.c \
             src/tcp/ngx_tcp_core_module.c \
             src/tcp/ngx_tcp_handler.c"
+
+TCP_SSL_MODULE="ngx_tcp_ssl_module"
+TCP_SSL_DEPS="src/tcp/ngx_tcp_ssl_module/ngx_tcp_ssl_module.h"
+TCP_SSL_SRCS="src/tcp/ngx_tcp_ssl_module/ngx_tcp_ssl_module.c"

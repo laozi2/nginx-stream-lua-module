@@ -311,6 +311,10 @@ found:
     addr->deferred_accept = listen->deferred_accept;
 #endif
 
+#if (NGX_TCP_SSL)
+    addr->ssl = listen->ssl;
+#endif
+
     return NGX_OK;
 }
 
@@ -459,6 +463,10 @@ ngx_tcp_add_addrs(ngx_conf_t *cf, ngx_tcp_port_t *tport,
 
         addrs[i].conf.addr_text.len = len;
         addrs[i].conf.addr_text.data = p;
+
+#if (NGX_TCP_SSL)
+        addrs[i].conf.ssl = addr[i].ssl;
+#endif
     }
 
     return NGX_OK;

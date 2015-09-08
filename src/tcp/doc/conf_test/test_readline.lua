@@ -14,7 +14,7 @@ local read_line = function(u,data_tb)
 		return nil
 	end
 	while true do
-		local i,j = string.find(data_tb["str"], "(.-)\r\n")
+		local i,j = string.find(data_tb["str"], "^(.-)\r\n")
 		if i then
 			local line = string.sub(data_tb["str"], i, j - 2)
 			data_tb["str"] = string.sub(data_tb["str"], j + 1)

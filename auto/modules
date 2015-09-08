@@ -417,6 +417,11 @@ if [ $MAIL_SSL = YES ]; then
     USE_OPENSSL=YES
 fi
 
+if [ $TCP_SSL = YES ]; then
+    have=NGX_TCP_SSL . auto/have
+    USE_OPENSSL=YES
+fi
+
 
 modules="$CORE_MODULES $EVENT_MODULES"
 
@@ -492,6 +497,13 @@ if [ $NGX_CPP_TEST = YES ]; then
 fi
 
 if [ $TCP = YES ]; then
+
+    if [ $TCP_SSL = YES ]; then
+        modules="$modules $TCP_SSL_MODULE"
+        TCP_DEPS="$TCP_DEPS $TCP_SSL_DEPS"
+        TCP_SRCS="$TCP_SRCS $TCP_SSL_SRCS"
+    fi
+
     modules="$modules $TCP_MODULES"
 fi
 

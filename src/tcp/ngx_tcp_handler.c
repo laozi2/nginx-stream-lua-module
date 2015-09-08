@@ -9,20 +9,24 @@
 #include <ngx_event.h>
 #include <ngx_tcp.h>
 
+#if (NGX_TCP_SSL)
+static void ngx_tcp_ssl_init_connection(ngx_ssl_t *ssl, ngx_connection_t *c);
+static void ngx_tcp_ssl_handshake_handler(ngx_connection_t *c);
+#endif
 
+static void ngx_tcp_init_session(ngx_connection_t *c);
 
 void
 ngx_tcp_init_connection(ngx_connection_t *c)
 {
-    ngx_uint_t             i;
-    ngx_tcp_port_t       *port;
+    ngx_uint_t            i;
+    ngx_tcp_port_t        *port;
     struct sockaddr       *sa;
     struct sockaddr_in    *sin;
-    ngx_tcp_log_ctx_t    *ctx;
-    ngx_tcp_in_addr_t    *addr;
-    ngx_tcp_session_t    *s;
-    ngx_tcp_addr_conf_t  *addr_conf;
-    ngx_event_t            *rev;
+    ngx_tcp_log_ctx_t     *ctx;
+    ngx_tcp_in_addr_t     *addr;
+    ngx_tcp_session_t     *s;
+    ngx_tcp_addr_conf_t   *addr_conf;
     ngx_tcp_core_srv_conf_t   *cscf;
 
 
@@ -121,6 +125,88 @@ ngx_tcp_init_connection(ngx_connection_t *c)
         return;
     }
 
+#if (NGX_TCP_SSL)
+
+    {
+    ngx_tcp_ssl_srv_conf_t  *sscf;
+
+    sscf = ngx_tcp_get_module_srv_conf(s, ngx_tcp_ssl_module);
+    if (sscf->enable || addr_conf->ssl) {
+
+        if (c->ssl == NULL) {
+
+            c->log->action = "SSL handshaking";
+
+            if (addr_conf->ssl && sscf->ssl.ctx == NULL) {
+                ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                              "no \"ssl_certificate\" is defined "
+                              "in server listening on SSL port");
+                ngx_tcp_close_connection(c);
+                return;
+            }
+
+            ngx_tcp_ssl_init_connection(&sscf->ssl, c);
+            return;
+        }
+    }
+    }
+
+#endif
+
+
+    ngx_tcp_init_session(c);
+}
+
+
+#if (NGX_TCP_SSL)
+
+static void
+ngx_tcp_ssl_init_connection(ngx_ssl_t *ssl, ngx_connection_t *c)
+{
+    if (ngx_ssl_create_connection(ssl, c, NGX_SSL_BUFFER) == NGX_ERROR) {
+        ngx_tcp_close_connection(c);
+        return;
+    }
+
+    if (ngx_ssl_handshake(c) == NGX_AGAIN) {
+
+        ngx_add_timer(c->read, c->listening->post_accept_timeout);
+
+        c->ssl->handler = ngx_tcp_ssl_handshake_handler;
+
+        return;
+    }
+
+    ngx_tcp_ssl_handshake_handler(c);
+}
+
+
+static void
+ngx_tcp_ssl_handshake_handler(ngx_connection_t *c)
+{
+    if (c->ssl->handshaked) {
+
+        c->read->ready = 0;//?
+
+        ngx_tcp_init_session(c);
+        return;
+    }
+
+    ngx_tcp_close_connection(c);
+}
+
+#endif
+
+static void
+ngx_tcp_init_session(ngx_connection_t *c)
+{
+    ngx_event_t               *rev;
+    ngx_tcp_core_srv_conf_t   *cscf;
+    ngx_tcp_session_t         *s;
+
+    s = c->data;
+    cscf = ngx_tcp_get_module_srv_conf(s, ngx_tcp_core_module);
+
     rev = c->read;
     rev->handler = cscf->protocol->init_connection;
     c->write->handler = ngx_tcp_empty_handler;
@@ -154,6 +240,16 @@ ngx_tcp_close_connection(ngx_connection_t *c)
     ngx_log_debug1(NGX_LOG_DEBUG_TCP, c->log, 0,
                    "close tcp connection: %d", c->fd);
 
+#if (NGX_TCP_SSL)
+
+    if (c->ssl) {
+        if (ngx_ssl_shutdown(c) == NGX_AGAIN) {
+            c->ssl->handler = ngx_tcp_close_connection;
+            return;
+        }
+    }
+
+#endif
 
 #if (NGX_STAT_STUB)
     (void) ngx_atomic_fetch_add(ngx_stat_active, -1);

@@ -14,6 +14,10 @@
 #include <ngx_event.h>
 #include <ngx_event_connect.h>
 
+#if (NGX_TCP_SSL)
+#include <ngx_tcp_ssl_module.h>
+#endif
+
 
 
 typedef struct {
@@ -32,6 +36,9 @@ typedef struct {
     unsigned                bind:1;
     unsigned                wildcard:1;
     unsigned                so_keepalive:2;
+#if (NGX_TCP_SSL)
+    unsigned                ssl:1;
+#endif
 
     int                     backlog;
     int                     rcvbuf;
@@ -53,7 +60,10 @@ typedef struct {
 
 typedef struct {
     ngx_tcp_conf_ctx_t      *ctx;
-    ngx_str_t               addr_text;
+    ngx_str_t                addr_text;
+#if (NGX_TCP_SSL)
+    ngx_uint_t               ssl;    /* unsigned   ssl:1; */
+#endif
 } ngx_tcp_addr_conf_t;
 
 typedef struct {
@@ -83,6 +93,9 @@ typedef struct {
 
     unsigned                bind:1;
     unsigned                wildcard:1;
+#if (NGX_TCP_SSL)
+    unsigned                ssl:1;
+#endif
     
     int                     backlog;
     int                     rcvbuf;
