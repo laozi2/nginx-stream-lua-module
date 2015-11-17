@@ -337,6 +337,7 @@ Nginx API for Lua
 >>     ngx.print("hello world",21,nil,true,false,{"a","b"})   --output: hello world21niltruefalseab
 
 >* **note**: 
+
 >>*    args can be string,number,bool,array type of table,lightuserdata,nil
 >>*    send_bytes will be (*number*(>0),'ok')  or (nil,*errormsg*).
 >>*    This method is a synchronous operation and is 100% nonblocking. But if AGAIN encountered while sending data this data will return immediately.
