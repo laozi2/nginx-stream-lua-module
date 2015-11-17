@@ -6,25 +6,23 @@
 >*   参数为任意个以下类型的值: table,string,nil,number,boolean, `ngx.null`. table为前面类型组成的数组，顺序拼接
 
 *   返回值: 
-
 >*   luaL_error, lua脚本出错退出, 有错误信息
 >>* 没有session，不在 `protocol_by_lua`指令中, "no session found"
 >>* 内存不足
 >>* ...
-
+>
 >* luaL_argerror, 参数错误，lua脚本出错退出, 有参数错误信息
 >>* 参数类型错误
-
+>
 >* 两个返回值: **nil, *errmsg*** ; 发送错误
 >>* 发送socket无效 : "closed"
 >>* 没有数据要发送 : "will send nothing"
 >>* 发送失败: "EAGAIN error", "closed",...
-
+>
 >* 两个返回值: ***number(>0)*, nil**
 >>* 发送除了number个字节数，可能少于要发送的字节数
 
 *   注意： 
-
 >*     该函数的实现暂未采用异步等待发完的处理，而是直接send(). **建议一次发送数据量不要过大**。
 >*     之所以失败第一个返回值是nil不是0是因为考虑以后发送超时，仍然返回已发送字节数，并且返回错误信息
 
