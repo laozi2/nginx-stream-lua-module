@@ -386,38 +386,38 @@ Nginx API for Lua
 
 >* **context**: str = ngx.utctime()
 >* **context**: `process_by_lua*`,`init_by_lua*`
->* **Note**: Returns the current time stamp (in the format yyyy-mm-dd hh:mm:ss) of the nginx cached time (no syscall involved unlike Lua's os.date function). This is the UTC time. 
+>* **note**: Returns the current time stamp (in the format yyyy-mm-dd hh:mm:ss) of the nginx cached time (no syscall involved unlike Lua's os.date function). This is the UTC time. 
 
 ### `ngx.localtime`
 
 >* **context**: str = ngx.localtime()
 >* **context**: `process_by_lua*`,`init_by_lua*`
->* **Note**: Returns the current time stamp (in the format yyyy-mm-dd hh:mm:ss) of the nginx cached time (no syscall involved unlike Lua's os.date function). This is the local time. 
+>* **note**: Returns the current time stamp (in the format yyyy-mm-dd hh:mm:ss) of the nginx cached time (no syscall involved unlike Lua's os.date function). This is the local time. 
 
 ### `ngx.time`
 
 >* **context**: secs = ngx.time()
 >* **context**: `process_by_lua*`,`init_by_lua*`
->* **Note**: Returns the elapsed seconds from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library). Updates of the Nginx time cache an be forced by calling ngx.update_time first. 
+>* **note**: Returns the elapsed seconds from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library). Updates of the Nginx time cache an be forced by calling ngx.update_time first. 
 
 
 ### `ngx.now`
 
 >* **context**: secs = ngx.now()
 >* **context**: `process_by_lua*`,`init_by_lua*`
->* **Note**: Returns a floating-point number for the elapsed time in seconds (including milliseconds as the decimal part) from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library). 
+>* **note**: Returns a floating-point number for the elapsed time in seconds (including milliseconds as the decimal part) from the epoch for the current time stamp from the nginx cached time (no syscall involved unlike Lua's date library). 
 
 ### `ngx.today`
 
 >* **context**: str = ngx.today()
 >* **context**: `process_by_lua*`,`init_by_lua*`
->* **Note**: Returns current date (in the format yyyy-mm-dd) from the nginx cached time (no syscall involved unlike Lua's date library). 
+>* **note**: Returns current date (in the format yyyy-mm-dd) from the nginx cached time (no syscall involved unlike Lua's date library). 
 
 ### `ngx.tcp_time`
 
 >* **context**: str = ngx.tcp_time(sec)
 >* **context**: `process_by_lua*`,`init_by_lua*`
->* **Note**: Returns a formated string can be used as the http header time (for example, being used in Last-Modified header). The parameter sec is the time stamp in seconds (like those returned from ngx.time). 
+>* **note**: Returns a formated string can be used as the http header time (for example, being used in Last-Modified header). The parameter sec is the time stamp in seconds (like those returned from ngx.time). 
 >* example
 >>     ngx.say(ngx.tcp_time(1290079655))
 >>        -- yields "Thu, 18 Nov 2010 11:27:35 GMT"
@@ -426,7 +426,7 @@ Nginx API for Lua
 
 >* **context**: sec = ngx.parse_tcp_time(str)
 >* **context**: `process_by_lua*`,`init_by_lua*`
->* **Note**: Parse the http time string (as returned by ngx.tcp_time) into seconds. Returns the seconds or nil if the input string is in bad forms. 
+>* **note**: Parse the http time string (as returned by ngx.tcp_time) into seconds. Returns the seconds or nil if the input string is in bad forms. 
 >* example
 >>     local time = ngx.parse_tcp_time("Thu, 18 Nov 2010 11:27:35 GMT")
 >>     if time == nil then
@@ -437,19 +437,20 @@ Nginx API for Lua
 
 >* **context**: ngx.update_time()
 >* **context**: `process_by_lua*`,`init_by_lua*`
->* **Note**: Forcibly updates the Nginx current time cache. This call involves a syscall and thus has some overhead, so do not abuse it. 
+>* **note**: Forcibly updates the Nginx current time cache. This call involves a syscall and thus has some overhead, so do not abuse it. 
 
 
 ### `ngx.shared.DICT`
 
 >* **context**: `process_by_lua*`,`init_by_lua*`
->*  **Note**: totally the seem as http [http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT)
+>*  **note**: totally the seem as http [http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT](http://wiki.nginx.org/HttpLuaModule#ngx.shared.DICT)
 
 
 ### `ngx.socket.tcp`
 >* **syntax**: tcpsock = ngx.socket.tcp()
 >* **context**: `process_by_lua*`
 >* **note**:
+
 >>*   The `connect_timeout`,`read_timeout`,`send_timeout` of tcpsock will default set by config command.
 >>*    Just like http  [http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp](http://wiki.nginx.org/HttpLuaModule#ngx.socket.tcp) Creates and returns a TCP socket object (also known as one type of the "cosocket" objects). The following methods are supported on this object: 
 >>>     connect
