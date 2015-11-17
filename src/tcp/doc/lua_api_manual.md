@@ -54,6 +54,7 @@
 
 * 返回值: 
 >* luaL_error, lua脚本出错退出, 有错误信息
+>
 >>* 参数个数不对 "expecting 0 arguments 
 >>* 没有session，不在 `protocol_by_lua`指令中, "no session found"
 
@@ -64,6 +65,7 @@
 
 * 返回值: 
 >* luaL_error, lua脚本出错退出, 有错误信息
+>
 >>* 参数个数不对 "expecting 0 arguments 
 >>* 没有session，不在 `protocol_by_lua`指令中, "no session found"
 
@@ -190,6 +192,7 @@
 
 * 返回值: 
 >* luaL_error, lua脚本出错退出, 有错误信息
+>
 >>* 参数个数少于1,包括对象 : "expecting at least 1 arguments (including the object) but got %d"
 
 
