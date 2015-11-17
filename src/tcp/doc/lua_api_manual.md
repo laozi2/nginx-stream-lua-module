@@ -37,12 +37,12 @@
 >>* 参数个数不对 "expecting 1 or 2 arguments"
 >>* 没有session，不在 `protocol_by_lua`指令中, "no session found"
 >>* 内存不足: "out of memory"
-
+>
 >* luaL_argerror, 参数错误，lua脚本出错退出, 有参数错误信息
 >>*  参数1不是数字： "expecting number parameter!"
 >>*  参数1小于等于0: "bad argument <= 0"
 >>*  参数2不在特定范围内: "bad pattern argument beyond [1,$2]"
-
+>
 >*  data, err, partial
 >>* 如果超时，客户端断开，接收出错等： data为nil, err为字符串, partial为出错前接收到的数据
 >>* 正常情况，data为接收到字符串，err,partial为nil
@@ -77,7 +77,7 @@
 >* luaL_error, lua脚本出错退出, 有错误信息
 >>* 参数个数不对 "expecting 1 arguments 
 >>* 没有session，不在 `protocol_by_lua指令中`, "no session found"
-
+>
 >* luaL_argerror, 参数错误，lua脚本出错退出, 有参数错误信息
 >>* 参数1小于等于0， "bad argument <= 0"
 
@@ -91,8 +91,7 @@
 >>*  参数个数不对 "expecting zero arguments, but got %d"
 >>*  没有session，不在 `protocol_by_lua指令中`, "no session found"
 >>*  lua内存不足: "out of memory"
-
-
+>
 >*  tcpsock
 >>*  正常一定返回tcpsock对象，其实是个table,[1]=upstream的userdata,[2]=pool key
 
@@ -114,12 +113,12 @@
 >>* 参数个数不对，"ngx.socket connect: expecting 3 or 4 arguments (including the object), but seen %d"
 >>* 没有session，不在 `protocol_by_lua指令中`, "no session found"
 >>* 内存不足: "out of memory"
-
+>
 >* luaL_argerror, 参数错误
 >>* 参数1的类型： "bad argument, string expected"
 >>* 参数2的类型和范围: "bad port number, need [0,65536]"
 >>* 参数3的类型，有但不是string : "bad argument, string expected"
-
+>
 >* ok,err
 >>* 成功,返回1个值，数字1
 >>* 失败,返回2个值，nil,errmsg.
@@ -139,12 +138,12 @@
 >>* 参数个数不对 "expecting 1 or 2 arguments"
 >>* 没有session，不在 `protocol_by_lua`指令中, "no session found"
 >>* 内存不足: "out of memory"
-
+>
 >* luaL_argerror, 参数错误，lua脚本出错退出, 有参数错误信息
 >>*  参数1不是数字： "expecting number parameter!"
 >>*  参数1小于等于0: "bad argument <= 0"
 >>*  参数2不在特定范围内: "bad pattern argument beyond [1,$2]"
-
+>
 >*  data, err, partial
 >>* 如果超时，客户端断开，接收出错等： data为nil, err为字符串, partial为出错前接收到的数据
 >>* 正常情况，data为接收到字符串，err,partial为nil
@@ -159,10 +158,10 @@
 >>* 参数个数不对 "expecting 2 arguments (including the object),but got %d"
 >>* 没有session，不在 `protocol_by_lua`指令中, "no session found"
 >>* 内存不足: "out of memory"
-
+>
 >* luaL_argerror, 参数错误，lua脚本出错退出, 有参数错误信息
 >>* 参数类型不对
-
+>
 >*  byte_sent,error,`partial_sent_byte`
 >>* 如果发送成功: byte_sent为实际发出的字节数，等于要发送的字节数
 >>* 如果发送失败: byte_send为nil, errmsg为错误信息，字符串，`partial_sent_byte`为失败前已经发送的字节数
@@ -177,7 +176,7 @@
 >* luaL_error, lua脚本出错退出, 有错误信息
 >>* 参数个数不对 "ngx.socket close: expecting 1 argument", 这里指没有对象调用。
 >>* 没有session，不在 `protocol_by_lua`指令中, "no session found"
-
+>
 >* retcode,errmsg
 >>*  如果close成功: 返回数字1
 >>*  如果已经close了，返回nil, "closed"
@@ -201,7 +200,7 @@
 * 返回值:
 >* luaL_error, lua脚本出错退出, 有错误信息
 >>* 参数个数错误: "expecting 1 argument (including the object), but got %d"
-
+>
 >* reusedtime,errmsg
 >>* socket已经关闭，返回 nil,"closed"
 >>* 成功返回数字.
@@ -217,7 +216,7 @@
 >>* 参数个数错误: "expecting 1 to 3 arguments (including the object), but got %d"
 >>* 没有session，不在 `protocol_by_lua`指令中, "no session found"
 >>* 内存不足: "out of memory"
-
+>
 >* retcode,errmsg
 >>* 错误: nil, error string : "key not found","closed","invalid connection","failed to handle read event", "zero pool size", "connection in dubious state",
 >>* 成功: 数字1
@@ -233,10 +232,10 @@
 >>* 参数个数错误: "expecting 3 arguments (including the object), but got %d"
 >>* 没有session，不在 `protocol_by_lua`指令中, "no session found"
 >>* 内存不足: "out of memory"
-
+>
 >* luaL_argerror, 参数错误，lua脚本出错退出, 有参数错误信息
 >>* 参数2,3不是数字，"expecting number parameter!", 不是大于0 "bad argument <= 0"
-
+>
 >* rettb,errmsg
 >>* rettb: table, 边解析边放入table,出错可能导致table里解析到的http内容不完整。
 >>* 当成功时: errmsg是nil, 否则为string
