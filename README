@@ -1,5 +1,5 @@
 基于nginx1.4.1版本, 本着精简，高效，模块化等原则，吸收nginx-http-lua模块(https://github.com/openresty/lua-nginx-module), 
-tcp_lua模块(https://github.com/bigplum/nginx-tcp-lua-module)等第三方nginx模块的设计框架和精华代码，忠于nginx编程思想和代码风格，化繁去简，
+tcp_lua模块(https://github.com/bigplum/nginx-tcp-lua-module) 等第三方nginx模块的设计框架和精华代码，忠于nginx编程思想和代码风格，化繁去简，
 实现基于tcp之上的自定义协议服务器，支持类似nginx扩展模块的开发，支持类似ngx-http-lua的快速的业务逻辑开发模式，支持基于异步socket反向代理，
 并实现与上游http，mysql服务的请求交互,支持http简单负载均衡.
 1. 日志： 新增 error_log, access_log 的网络日志功能。
