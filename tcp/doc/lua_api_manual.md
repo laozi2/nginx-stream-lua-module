@@ -83,6 +83,34 @@
 >* luaL_argerror, 参数错误，lua脚本出错退出, 有参数错误信息
 >>* 参数1小于等于0， "bad argument <= 0"
 
+### `ngx.new_ssl_ctx`
+
+* 语法: `ngx.new_ssl_ctx({})
+>*   参数table 
+>
+>         {
+>             ssl_protocols = {
+>                  "SSLv3",
+>                  "TLSv1",
+>                  "TLSv1.1",
+>                  "TLSv1.2",
+>              },
+>             ssl_ciphers = "HIGH:!aNULL:!MD5",
+>             ssl_verify_depth = 1,
+>             ssl_trusted_certificate = "",
+>             ssl_crl = ""
+>         }
+
+* 返回值: 
+>* luaL_error, lua脚本出错退出, 有错误信息
+>>*  参数不对
+>>*  不在 `protocol_by_lua指令中`, "only use in `init_by_lua`"
+>>*  lua内存不足: "out of memory"
+>>*  配置错误 `"ngx_tcp_lua_set_ssl failed"`
+>
+>* luaL_argerror, 参数错误，lua脚本出错退出, 有参数错误信息
+>>* 参数1小于等于0， "bad argument <= 0"
+
 
 ### `ngx.socket.tcp`
 

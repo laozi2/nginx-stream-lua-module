@@ -6,6 +6,21 @@ Tested with nginx-1.4.1.
 
 2015/05/19
 
+基于nginx1.4.1版本, 本着精简，高效，模块化等原则，吸收nginx-http-lua模块(https://github.com/openresty/lua-nginx-module), tcp_lua模块(https://github.com/bigplum/nginx-tcp-lua-module) 等第三方nginx模块的设计框架和精华代码，忠于nginx编程思想和代码风格，化繁去简，实现基于tcp之上的自定义协议服务器，支持类似nginx扩展模块的开发，支持类似ngx-http-lua的快速的业务逻辑开发模式，支持基于异步socket反向代理，并实现与上游http，mysql服务的请求交互,支持http简单负载均衡.
+
+* 日志： 新增 error_log, access_log 的网络日志功能。
+* tcp 模块. tcp框架下自定义协议开发，模块示例 demo 
+* 基于tcp框架的tcp_lua模块。在基本代码框架上做调整：
+>*  将整个ngx_tcp_lua作为一个独立模块，而非整个tcp模块围绕tcp_lua模块开发。
+>*  鉴于一个连接上仅有一个客户端，将封装的socket上下游通用类分离出下游函数。socket类仅与上游交互。简化逻辑。
+>*  为提高效率，lua处理请求分为 连接会话和协议请求。充分利用keepalive。 具体参照文档和实现。
+>*  去掉接收数据时的模式匹配功能函数receiveutil，简化接收发送缓存的实现，使得对内存的控制更精确，内存资源管理更简单。
+>*  扩充init_by_lua功能和共享内存操作功能, ngx.sleep,ngx.exit等函数。
+>*  优化代码和修复已知bug.
+>*  支持使用mysql,http协议与上游交互，并支持简单的负载均衡和重试机制
+>*  实现ngx.nlog代替ngx.log打印网络日志
+>*  支持cosocket的ssl
+
 
 Install
 --------------------
