@@ -1,5 +1,8 @@
 --local bit = require("bit")
---local netutil = require("netutil")
+local netutil = require("netutil")
+local cjson = require "cjson"
+local cjson_safe = require "cjson.safe"
+
 local client_sock = ngx.socket.tcp()
 client_sock:settimeout(5000,1000,3000)
 
@@ -105,6 +108,11 @@ local test_nlog = function()
 		end
 	end
 
+end
+
+local test_echo_readline = function()
+        local str = "safdsf\rsafdsaf\nsafdsa\r\nsadfaf\r\n" 
+        ngx.print(str)
 end
 
 local i = 0

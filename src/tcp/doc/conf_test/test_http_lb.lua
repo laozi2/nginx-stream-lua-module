@@ -1,3 +1,5 @@
+local cjson = require "cjson"
+local cjson_safe = require "cjson.safe"
 
 local requst_tb = {
 	["method"] = "GET", --GET POST HEAD
@@ -9,7 +11,7 @@ local requst_tb = {
 	["headers"] = { --table or nil
 		--not allow to set Content-Length,Transfer-Encoding,Connection
 		["X-IS-IP"] = "127.0.0.1",
-		["Host"] = "api.intsig.net",
+		["Host"] = "api.xxxxxx.net",
 	},
 	["body"] = nil, -- POST:string or GET/HEAD:nil
 }

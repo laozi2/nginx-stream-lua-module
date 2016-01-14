@@ -1,4 +1,4 @@
-#include "ngx_tcp_lua_socket.h"
+#include "ngx_tcp_lua_socket_tcp.h"
 #include "ngx_tcp_lua_util.h"
 #include "ngx_tcp_lua_session.h"
 

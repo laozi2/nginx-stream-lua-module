@@ -87,7 +87,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/ngx_tcp_lua_module.c \
                 $ngx_addon_dir/ngx_tcp_lua_req.c \
                 $ngx_addon_dir/ngx_tcp_lua_session.c \
-                $ngx_addon_dir/ngx_tcp_lua_socket.c \
+                $ngx_addon_dir/ngx_tcp_lua_socket_tcp.c \
                 $ngx_addon_dir/ngx_tcp_lua_string.c \
                 $ngx_addon_dir/ngx_tcp_lua_time.c \
                 $ngx_addon_dir/ngx_tcp_lua_util.c \
@@ -98,6 +98,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/ngx_tcp_lua_pcrefix.c \
                 $ngx_addon_dir/ngx_tcp_lua_script.c \
                 $ngx_addon_dir/ngx_tcp_lua_regex.c \
+                $ngx_addon_dir/ngx_tcp_lua_ssl.c \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
@@ -108,7 +109,7 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/ngx_tcp_lua_log.h \
                 $ngx_addon_dir/ngx_tcp_lua_req.h \
                 $ngx_addon_dir/ngx_tcp_lua_session.h \
-                $ngx_addon_dir/ngx_tcp_lua_socket.h \
+                $ngx_addon_dir/ngx_tcp_lua_socket_tcp.h \
                 $ngx_addon_dir/ngx_tcp_lua_string.h \
                 $ngx_addon_dir/ngx_tcp_lua_time.h \
                 $ngx_addon_dir/ngx_tcp_lua_util.h \
@@ -118,4 +119,5 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/ngx_tcp_lua_pcrefix.h \
                 $ngx_addon_dir/ngx_tcp_lua_script.h \
                 $ngx_addon_dir/ngx_tcp_lua_regex.h \
+                $ngx_addon_dir/ngx_tcp_lua_ssl.h \
                 "

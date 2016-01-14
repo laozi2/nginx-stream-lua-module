@@ -3,7 +3,7 @@
 #include "ngx_tcp_lua_util.h"
 #include "ngx_tcp_lua_req.h"
 #include "ngx_tcp_lua_string.h"
-#include "ngx_tcp_lua_socket.h"
+#include "ngx_tcp_lua_socket_tcp.h"
 #include "ngx_tcp_lua_exception.h"
 #include "ngx_tcp_lua_log.h"
 #include "ngx_tcp_lua_time.h"
@@ -12,6 +12,7 @@
 #include "ngx_tcp_lua_shdict.h"
 #include "ngx_tcp_lua_pcrefix.h"
 #include "ngx_tcp_lua_regex.h"
+#include "ngx_tcp_lua_ssl.h"
 
 
 
@@ -152,6 +153,10 @@ ngx_tcp_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
 
 #if (NGX_PCRE)
     ngx_tcp_lua_inject_regex_api(L);
+#endif
+
+#if (NGX_TCP_SSL)
+    ngx_tcp_lua_inject_ssl_api(L);
 #endif
 
     lua_getglobal(L, "package"); /* ngx package */

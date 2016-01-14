@@ -15,5 +15,6 @@ tcp_lua模块(https://github.com/bigplum/nginx-tcp-lua-module) 等第三方nginx
 	3.6 优化代码和修复已知bug.
 	3.7 支持使用mysql,http协议与上游交互，并支持简单的负载均衡和重试机制
 	3.8 实现ngx.nlog代替ngx.log打印网络日志
+	3.9 支持cosocket的ssl
 4. 详细说明见 src/tcp/doc/ 相关文档
 

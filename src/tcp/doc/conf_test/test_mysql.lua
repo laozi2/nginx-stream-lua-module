@@ -1,6 +1,7 @@
 --local mysql = require("mysql")
 --local db_ml = require("db_ml")
---local cjson = require("cjson")
+local cjson = require "cjson"
+local cjson_safe = require "cjson.safe"
 
 --db config
 local db_user = {}

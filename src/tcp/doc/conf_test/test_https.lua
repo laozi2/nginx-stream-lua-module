@@ -3,7 +3,7 @@ local cjson_safe = require "cjson.safe"
 
 local http_config = {
 	["host"] = "127.0.0.1", --string
-	["port"] = 80, --number
+	["port"] = 443, --number
 	["connect_timeout"] = 5000,  --number(ms,>0) or nil
 	["send_timeout"] = 5000,  --number(ms,>0) or nil
 	["read_timeout"] = 5000,  --number(ms,>0) or nil
@@ -24,7 +24,7 @@ local requst_tb = {
 	["headers"] = { --table or nil
 		--not allow to set Content-Length,Transfer-Encoding,Connection
 		["X-IS-IP"] = "127.0.0.1",
-		["Host"] = "api-sandbox.xxxxx.net",
+		["Host"] = "api-sandbox.xxxx.net",
 	},
 	["body"] = nil, -- POST:string or GET/HEAD:nil
 }
@@ -35,6 +35,13 @@ local test_http = function()
 	local ret,errmsg = httpsock:init(http_config)
 	nlog.info(tostring(ret).." "..tostring(errmsg))
 	if not ret then
+		return
+	end
+	
+	ret,errmsg = httpsock:sslhandshake(ssl1,false)
+	nlog.info(tostring(ret).." "..tostring(errmsg))
+	if not ret then	
+		httpsock:done()
 		return
 	end
 	

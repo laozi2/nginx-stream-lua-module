@@ -437,7 +437,7 @@ ngx_tcp_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
 
         if (ngx_memcmp(lsopt[i].sockaddr + off, u.sockaddr + off, len) != 0) {
-            //continue;/*��ʱ�ϸ�˿ڲ��ظ�*/
+            //continue;/*暂时严格端口不重复*/
         }
 
         if (port != u.port) {

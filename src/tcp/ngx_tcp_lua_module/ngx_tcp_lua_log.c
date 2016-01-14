@@ -93,7 +93,7 @@ int
 ngx_tcp_lua_ngx_log(lua_State *L)
 {
     ngx_tcp_session_t          *s;
-    const char                  *msg;
+    const char                 *msg;
 
     s = ngx_tcp_lua_get_session(L); 
     if (s == NULL) { //init_by_lua no session
