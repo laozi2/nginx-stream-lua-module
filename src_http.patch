@@ -1,0 +1,385 @@
+diff -uNr nginx-1.4.1/src/http/modules/ngx_http_log_module.c nginx-tcp-lua-module/src/http/modules/ngx_http_log_module.c
+--- nginx-1.4.1/src/http/modules/ngx_http_log_module.c	2016-01-14 11:25:46.571991783 +0800
++++ nginx-tcp-lua-module/src/http/modules/ngx_http_log_module.c	2016-01-14 10:30:35.731996261 +0800
+@@ -13,7 +13,6 @@
+ #include <zlib.h>
+ #endif
+ 
+-
+ typedef struct ngx_http_log_op_s  ngx_http_log_op_t;
+ 
+ typedef u_char *(*ngx_http_log_op_run_pt) (ngx_http_request_t *r, u_char *buf,
+@@ -67,6 +66,7 @@
+     time_t                      disk_full_time;
+     time_t                      error_log_time;
+     ngx_http_log_fmt_t         *format;
++    ngx_socket_t                fd;//NLOG
+ } ngx_http_log_t;
+ 
+ 
+@@ -146,6 +146,8 @@
+     void *conf);
+ static ngx_int_t ngx_http_log_init(ngx_conf_t *cf);
+ 
++static char *ngx_access_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);//NLOG
++static void ngx_clean_nlog_sock(void* data);//NLOG
+ 
+ static ngx_command_t  ngx_http_log_commands[] = {
+ 
+@@ -171,6 +173,14 @@
+       0,
+       NULL },
+ 
++/*------------------------NLOG------------------------*/
++    {ngx_string("access_nlog"),
++     NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
++     ngx_access_nlog,
++     NGX_HTTP_LOC_CONF_OFFSET,
++     0,
++     NULL},
++/*------------------------NLOG------------------------*/
+       ngx_null_command
+ };
+ 
+@@ -222,9 +232,9 @@
+     { ngx_string("time_iso8601"), sizeof("1970-09-28T12:00:00+06:00") - 1,
+                           ngx_http_log_iso8601 },
+     { ngx_string("msec"), NGX_TIME_T_LEN + 4, ngx_http_log_msec },
+-    { ngx_string("request_time"), NGX_TIME_T_LEN + 4,
++    { ngx_string("request_time"), sizeof("\033[0;32;40m0.000\033[0m")-1,/*NGX_TIME_T_LEN + 4,*/
+                           ngx_http_log_request_time },
+-    { ngx_string("status"), NGX_INT_T_LEN, ngx_http_log_status },
++    { ngx_string("status"), sizeof("\033[0;32;40m000\033[0m")-1/*NGX_INT_T_LEN*/, ngx_http_log_status },
+     { ngx_string("bytes_sent"), NGX_OFF_T_LEN, ngx_http_log_bytes_sent },
+     { ngx_string("body_bytes_sent"), NGX_OFF_T_LEN,
+                           ngx_http_log_body_bytes_sent },
+@@ -362,10 +372,24 @@
+             n = ngx_http_log_gzip(log->file->fd, buf, len, buffer->gzip,
+                                   r->connection->log);
+         } else {
+-            n = ngx_write_fd(log->file->fd, buf, len);
++/*------------------------NLOG------------------------*/
++            if (log->fd == -1) {
++                n = ngx_write_fd(log->file->fd, buf, len);
++            }
++            else{
++                n = send(log->fd, buf, len, 0);
++            }
++/*------------------------NLOG------------------------*/
+         }
+ #else
+-        n = ngx_write_fd(log->file->fd, buf, len);
++/*------------------------NLOG------------------------*/
++        if (log->fd == -1) {
++            n = ngx_write_fd(log->file->fd, buf, len);
++        }
++        else{
++            n = send(log->fd, buf, len, 0);
++        }
++/*------------------------NLOG------------------------*/
+ #endif
+ 
+     } else {
+@@ -779,8 +803,24 @@
+     ms = (ngx_msec_int_t)
+              ((tp->sec - r->start_sec) * 1000 + (tp->msec - r->start_msec));
+     ms = ngx_max(ms, 0);
++/************************colorful request time**********************************************/
+ 
+-    return ngx_sprintf(buf, "%T.%03M", ms / 1000, ms % 1000);
++    if(ms < 10) {
++        return ngx_sprintf(buf, "%T.%03M", ms / 1000, ms % 1000);
++    }
++    else if (ms < 100) {
++        return ngx_sprintf(buf,"\033[0;36;40m%T.%03M\033[0m", ms / 1000, ms % 1000);
++    }
++    else if (ms < 500) {
++        return ngx_sprintf(buf,"\033[0;33;40m%T.%03M\033[0m", ms / 1000, ms % 1000);
++    }
++    else {
++        return ngx_sprintf(buf,"\033[0;31;40m%T.%03M\033[0m", ms / 1000, ms % 1000);
++    }
++
++/************************colorful request time**********************************************/
++
++    /*return ngx_sprintf(buf, "%T.%03M", ms / 1000, ms % 1000);*/
+ }
+ 
+ 
+@@ -801,8 +841,21 @@
+     } else {
+         status = 0;
+     }
+-
+-    return ngx_sprintf(buf, "%03ui", status);
++/************************colorful status time**********************************************/
++    if (status >= 500) {
++        return ngx_sprintf(buf,"\033[0;31;40m%03ui\033[0m", status);
++    }
++    else if (status >= 400) {
++        return ngx_sprintf(buf,"\033[0;33;40m%03ui\033[0m", status);
++    }
++    else if (status < 100) {
++        return ngx_sprintf(buf,"\033[0;36;40m%03ui\033[0m", status);
++    }
++    else {
++        return ngx_sprintf(buf, "%03ui", status);
++    }
++    /*return ngx_sprintf(buf, "%03ui", status);*/
++/************************colorful status time**********************************************/
+ }
+ 
+ 
+@@ -1125,6 +1178,8 @@
+ 
+     ngx_memzero(log, sizeof(ngx_http_log_t));
+ 
++    log->fd = -1; //NLOG
++
+     n = ngx_http_script_variables_count(&value[1]);
+ 
+     if (n == 0) {
+@@ -1687,3 +1742,242 @@
+ 
+     return NGX_OK;
+ }
++
++/*------------------------NLOG------------------------*/
++//char *ngx_access_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
++//{
++//    ngx_http_log_loc_conf_t    *llcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_log_module);
++//    ngx_http_log_t             *log = NULL;
++//    int sock = -1;
++//    ngx_str_t  *value, localaddr, remoteaddress;
++//    char* pos;
++//    char rip[16];
++//    int val = 1;
++//    unsigned short lport,rport;
++//
++//    if (cf->args->nelts != 3) {
++//        return "nlog arguments wrong";
++//    }
++//
++//    if (NULL == llcf->logs) {
++//            return NGX_CONF_ERROR;
++//    }
++//    
++//    log = (ngx_http_log_t*)(llcf->logs->elts);
++//    
++//    if (NULL == log) {
++//            return NGX_CONF_ERROR;
++//    }
++//
++//    if(-1 != log->sock){
++//         return NGX_CONF_ERROR;
++//    }
++//
++//
++//    value = cf->args->elts;
++//
++//    localaddr = value[1];
++//    remoteaddress= value[2];
++//
++//    // access_nlog 127.0.0.1:5050  192.168.0.25:5151 
++//    pos = strchr((char*)localaddr.data,':');
++//    if(NULL == pos){
++//        return NGX_CONF_ERROR;
++//    }
++//    lport = (unsigned short)atoi(pos+1);
++//    pos = strchr((char*)remoteaddress.data,':');
++//    if(NULL == pos){
++//        return NGX_CONF_ERROR;
++//    }
++//    rport = (unsigned short)atoi(pos+1);
++//    int len = pos - (char*)remoteaddress.data;
++//    if(len<=0 || len>=16){
++//        return NGX_CONF_ERROR;
++//    }
++//    memcpy(rip,remoteaddress.data,len);
++//    rip[len] = '\0';
++//
++//    struct sockaddr_in laddr;
++//    laddr.sin_family = AF_INET;
++//     laddr.sin_port =  htons(lport);
++//    laddr.sin_addr.s_addr = INADDR_ANY;
++//    
++//    struct sockaddr_in remoteaddr;
++//    memset(&remoteaddr,0,sizeof(remoteaddr));
++//      remoteaddr.sin_family = AF_INET;
++//      remoteaddr.sin_port =  htons(rport);
++//      remoteaddr.sin_addr.s_addr = inet_addr (rip);
++//
++//    if ((sock = socket (PF_INET, SOCK_DGRAM, 0)) < 0)
++//    {
++//        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++//                               "access_nlog socket create  err ");
++//        return NGX_CONF_ERROR;
++//    }
++//
++//    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *) &val, sizeof (val)) != 0)
++//    {
++//        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++//                               "access_nlog socket reuse bind err ");
++//          return NGX_CONF_ERROR;
++//    }
++//
++//    if (bind (sock, (struct sockaddr *) &laddr, sizeof (laddr)) < 0)
++//    {
++//        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++//                               "access_nlog socket bind err ");
++//        return NGX_CONF_ERROR;
++//    }
++//
++//    log->sock =  sock;
++//    log->raddr = remoteaddr;
++//    ngx_pool_cleanup_t* pct = ngx_pool_cleanup_add(cf->pool, sizeof(int));
++//    pct->data = (void*)&(log->sock);
++//    pct->handler = ngx_cleansock;
++//
++//    return NGX_CONF_OK;
++//}
++
++char *ngx_access_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
++{
++    ngx_http_log_loc_conf_t    *llcf;
++    ngx_http_log_t             *log;
++    ngx_str_t                  *value;
++    ngx_url_t                   u_l;
++    ngx_url_t                   u_r;
++    ngx_socket_t                s;
++    int                         reuseaddr;
++    ngx_pool_cleanup_t         *cln;
++
++    llcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_log_module);
++    
++    if (llcf->off == 1) {
++        return NGX_CONF_OK;
++    }
++
++    if (NULL == llcf->logs) {
++        return "need set access_log first";
++    }
++    
++    log = (ngx_http_log_t*)(llcf->logs->elts);
++    
++    if (NULL == log) {
++        return "need set access_log first";
++    }
++
++    if (log->fd != -1) {
++        return "is duplicate";
++    }
++
++    value = cf->args->elts;
++
++    ngx_memzero(&u_l, sizeof(ngx_url_t));
++    u_l.url = value[1];
++    u_l.default_port = (in_port_t) 0;
++    u_l.no_resolve = 1;
++
++    if (ngx_parse_url(cf->pool, &u_l) != NGX_OK) {
++        if (u_l.err) {
++            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++                               "%s in \"%V\" of the \"nlog\" directive",
++                               u_l.err, &u_l.url);
++        }
++
++        return NGX_CONF_ERROR;
++    }
++
++    if (u_l.no_port || u_l.family != AF_INET) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, 
++                                "no valid port or no valid ipv4 address");
++
++        return NGX_CONF_ERROR;
++    }
++    
++    ngx_memzero(&u_r, sizeof(ngx_url_t));
++    u_r.url = value[2];
++    u_r.default_port = (in_port_t) 0;
++    u_r.no_resolve = 1;
++
++    if (ngx_parse_url(cf->pool, &u_r) != NGX_OK) {
++        if (u_r.err) {
++            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++                               "%s in \"%V\" of the \"nlog\" directive",
++                               u_r.err, &u_r.url);
++        }
++
++        return NGX_CONF_ERROR;
++    }
++    
++    if (u_r.no_port || u_r.family != AF_INET) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, 
++                                "no valid port or no valid ipv4 address");
++
++        return NGX_CONF_ERROR;
++    }
++
++    s = ngx_socket(AF_INET, SOCK_DGRAM, 0);
++
++    ngx_conf_log_error(NGX_LOG_DEBUG, cf, 0,"nlog create udp socket %d",s);
++
++    if (s == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "socket() failed, %d", ngx_socket_errno);
++
++        return NGX_CONF_ERROR;
++    }
++
++    if (ngx_nonblocking(s) == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "ngx_nonblocking() failed, %d", ngx_socket_errno);
++        
++        goto failed;
++    }
++
++    reuseaddr = 1;
++    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
++                           (const void *) &reuseaddr, sizeof(int))
++                == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "setsockopt() failed, %d", ngx_socket_errno);
++        
++        goto failed;
++    }
++
++    if (bind(s, (struct sockaddr_in*) &u_l.sockaddr, u_l.socklen) == -1)
++    {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "bind() failed, %d", ngx_socket_errno);
++
++        goto failed;
++    }
++    
++    if (connect(s, (struct sockaddr_in*) &u_r.sockaddr, u_r.socklen) == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "connect() failed, %d", ngx_socket_errno);
++
++        goto failed;
++    }
++    
++    log->fd = s;
++
++    cln = ngx_pool_cleanup_add(cf->pool, 0);
++    cln->data = log;
++    cln->handler = ngx_clean_nlog_sock;
++    
++    return NGX_CONF_OK;
++
++failed:
++
++    if (ngx_close_socket(s) == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "ngx_close_socket() failed, %d", ngx_socket_errno);
++    }
++
++    return NGX_CONF_ERROR;
++}
++
++static void ngx_clean_nlog_sock(void* data)
++{
++    ngx_http_log_t  *log;
++
++    log = data;
++    if (log->fd != -1) {
++        ngx_close_socket(log->fd);
++        log->fd = -1;
++    }
++}
++/*------------------------NLOG------------------------*/
+\ No newline at end of file

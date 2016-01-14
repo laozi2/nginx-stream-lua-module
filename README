@@ -18,3 +18,15 @@ tcp_lua模块(https://github.com/bigplum/nginx-tcp-lua-module) 等第三方nginx
 	3.9 支持cosocket的ssl
 4. 详细说明见 src/tcp/doc/ 相关文档
 
+
+
+-----------------------
+1. download nginx-1.4.1 source code
+http://nginx.org/download/nginx-1.4.1.tar.gz
+unzip, cd nginx-1.4.1
+
+2. copy auto.patch,src_core.patch,src_http.patch into current directory
+3. patch -p1 < auto.patch 
+   patch -p1 < src_core.patch
+   patch -p1 < src_http.patch   #optional, for nginx access_nlog
+4. copy tcp/ into current src/

@@ -1,0 +1,313 @@
+diff -uNr nginx-1.4.1/src/core/ngx_log.c nginx-tcp-lua-module/src/core/ngx_log.c
+--- nginx-1.4.1/src/core/ngx_log.c	2016-01-14 11:25:46.260991783 +0800
++++ nginx-tcp-lua-module/src/core/ngx_log.c	2016-01-14 10:30:35.421996262 +0800
+@@ -8,9 +8,9 @@
+ #include <ngx_config.h>
+ #include <ngx_core.h>
+ 
+-
+ static char *ngx_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+-
++static char *ngx_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);//NLOG
++static void ngx_clean_nlog_sock(void* data);//NLOG
+ 
+ static ngx_command_t  ngx_errlog_commands[] = {
+ 
+@@ -20,7 +20,14 @@
+      0,
+      0,
+      NULL},
+-
++/*------------------------NLOG------------------------*/
++    {ngx_string("nlog"),
++     NGX_MAIN_CONF|NGX_CONF_TAKE2,
++     ngx_nlog,
++     0,
++     0,
++     NULL},
++/*------------------------NLOG------------------------*/     
+     ngx_null_command
+ };
+ 
+@@ -67,7 +74,7 @@
+ 
+ static const char *debug_levels[] = {
+     "debug_core", "debug_alloc", "debug_mutex", "debug_event",
+-    "debug_http", "debug_mail", "debug_mysql"
++    "debug_http", "debug_mail", "debug_mysql","debug_tcp"
+ };
+ 
+ 
+@@ -139,8 +146,16 @@
+     }
+ 
+     ngx_linefeed(p);
+-
+-    (void) ngx_write_fd(log->file->fd, errstr, p - errstr);
++/*------------------------NLOG------------------------*/
++    if (log->fd == -1) {
++/*------------------------NLOG------------------------*/    
++        (void) ngx_write_fd(log->file->fd, errstr, p - errstr);
++/*------------------------NLOG------------------------*/
++    }
++    else {
++        (void) send(log->fd, errstr, p - errstr, 0);
++    }
++/*------------------------NLOG------------------------*/    
+ 
+     if (!ngx_use_stderr
+         || level > NGX_LOG_WARN
+@@ -434,6 +449,8 @@
+         return "is duplicate";
+     }
+ 
++    cf->cycle->new_log.fd = -1;//NLOG
++
+     value = cf->args->elts;
+ 
+     if (ngx_strcmp(value[1].data, "stderr") == 0) {
+@@ -457,3 +474,207 @@
+ 
+     return ngx_log_set_levels(cf, &cf->cycle->new_log);
+ }
++
++/*------------------------NLOG------------------------*/
++//char *ngx_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
++//{
++//    ngx_str_t *value, localaddr, remoteaddress;
++//    char*     pos;
++//    char      rip[16] = {0};
++//    int       val     = 1;
++//    unsigned short lport,rport;
++//    struct sockaddr_in laddr;
++//
++//    //need set file first
++//    if (NULL == cf->cycle->new_log.file) {
++//        return "need set error_log first";
++//    }
++//
++//    value = cf->args->elts;
++//
++//    localaddr = value[1];
++//    remoteaddress = value[2];
++//
++//    /* nlog 127.0.0.1:5050  192.168.0.25:5151 */
++//    pos = strchr((char*)localaddr.data,':');
++//    if (NULL == pos) {
++//        return NGX_CONF_ERROR;
++//    }
++//    lport = (unsigned short)atoi(pos + 1);
++//
++//    pos = strchr((char*)remoteaddress.data,':');
++//    if (NULL == pos) {
++//        return NGX_CONF_ERROR;
++//    }
++//    rport = (unsigned short)atoi(pos + 1);
++//
++//    int len = pos - (char*)remoteaddress.data;
++//    if (len <= 0 || len >= 16) {
++//        return NGX_CONF_ERROR;
++//    }
++//
++//    memcpy(rip,remoteaddress.data,len);
++//    rip[len] = '\0';
++//
++//    //printf("local port:%u, remote port:%u, remote ip:%s\n",lport,rport,rip);
++//
++//    laddr.sin_family = AF_INET;
++//     laddr.sin_port =  htons(lport);
++//    laddr.sin_addr.s_addr = INADDR_ANY;
++//
++//      remoteaddr.sin_family = AF_INET;
++//      remoteaddr.sin_port =  htons(rport);
++//      remoteaddr.sin_addr.s_addr = inet_addr (rip);
++//
++//    if ((sock = socket (PF_INET, SOCK_DGRAM, 0)) < 0)
++//    {
++//        //perror("socket");
++//        return NGX_CONF_ERROR;
++//    }
++//
++//    //printf("sock %d\n",sock);
++//
++//    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *) &val, sizeof (val)) != 0)
++//    {
++//          //printf ("error!setsockopt failed! ");
++//          return NGX_CONF_ERROR;
++//    }
++//
++//    if (bind (sock, (struct sockaddr *) &laddr, sizeof (laddr)) < 0)
++//    {
++//        //perror("bind");
++//        return NGX_CONF_ERROR;
++//    }
++//
++//    return NGX_CONF_OK;
++//}
++
++char *ngx_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
++{
++    ngx_str_t              *value;
++    ngx_url_t               u_l;
++    ngx_url_t               u_r;
++    ngx_socket_t            s;
++    int                     reuseaddr;
++    ngx_pool_cleanup_t     *cln;
++
++    //need set file first
++    if (NULL == cf->cycle->new_log.file) {
++        return "need set error_log first";
++    }
++    
++    if (cf->cycle->new_log.fd != -1) {
++        return "is duplicate";
++    }
++
++    value = cf->args->elts;
++
++    ngx_memzero(&u_l, sizeof(ngx_url_t));
++    u_l.url = value[1];
++    u_l.default_port = (in_port_t) 0;
++    u_l.no_resolve = 1;
++
++    if (ngx_parse_url(cf->pool, &u_l) != NGX_OK) {
++        if (u_l.err) {
++            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++                               "%s in \"%V\" of the \"nlog\" directive",
++                               u_l.err, &u_l.url);
++        }
++
++        return NGX_CONF_ERROR;
++    }
++
++    if (u_l.no_port || u_l.family != AF_INET) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, 
++                                "no valid port or no valid ipv4 address");
++
++        return NGX_CONF_ERROR;
++    }
++    
++    ngx_memzero(&u_r, sizeof(ngx_url_t));
++    u_r.url = value[2];
++    u_r.default_port = (in_port_t) 0;
++    u_r.no_resolve = 1;
++
++    if (ngx_parse_url(cf->pool, &u_r) != NGX_OK) {
++        if (u_r.err) {
++            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
++                               "%s in \"%V\" of the \"nlog\" directive",
++                               u_r.err, &u_r.url);
++        }
++
++        return NGX_CONF_ERROR;
++    }
++    
++    if (u_r.no_port || u_r.family != AF_INET) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, 
++                                "no valid port or no valid ipv4 address");
++
++        return NGX_CONF_ERROR;
++    }
++
++    s = ngx_socket(AF_INET, SOCK_DGRAM, 0);
++
++    ngx_conf_log_error(NGX_LOG_DEBUG, cf, 0,"nlog create udp socket %d",s);
++
++    if (s == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "socket() failed, %d", ngx_socket_errno);
++
++        return NGX_CONF_ERROR;
++    }
++
++    if (ngx_nonblocking(s) == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "ngx_nonblocking() failed, %d", ngx_socket_errno);
++        
++        goto failed;
++    }
++
++    reuseaddr = 1;
++    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
++                           (const void *) &reuseaddr, sizeof(int))
++                == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "setsockopt() failed, %d", ngx_socket_errno);
++        
++        goto failed;
++    }
++
++    if (bind(s, (struct sockaddr_in*) &u_l.sockaddr, u_l.socklen) == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "bind() failed, %d", ngx_socket_errno);
++
++        goto failed;
++    }
++    
++    if (connect(s, (struct sockaddr_in*) &u_r.sockaddr, u_r.socklen) == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "connect() failed, %d", ngx_socket_errno);
++
++        goto failed;
++    }
++    
++    cf->cycle->new_log.fd = s;
++
++    cln = ngx_pool_cleanup_add(cf->pool, 0);
++    cln->data = &cf->cycle->new_log;
++    cln->handler = ngx_clean_nlog_sock;
++    
++    return NGX_CONF_OK;
++
++failed:
++
++    if (ngx_close_socket(s) == -1) {
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "ngx_close_socket() failed, %d", ngx_socket_errno);
++    }
++
++    return NGX_CONF_ERROR;
++}
++
++static void ngx_clean_nlog_sock(void* data)
++{
++    ngx_log_t  *log;
++
++    log = data;
++    if (log->fd != -1) {
++        ngx_close_socket(log->fd);
++        log->fd = -1;
++    }
++}
++/*------------------------NLOG------------------------*/
+diff -uNr nginx-1.4.1/src/core/ngx_log.h nginx-tcp-lua-module/src/core/ngx_log.h
+--- nginx-1.4.1/src/core/ngx_log.h	2016-01-14 11:25:46.264991783 +0800
++++ nginx-tcp-lua-module/src/core/ngx_log.h	2016-01-14 10:30:35.425996262 +0800
+@@ -30,6 +30,7 @@
+ #define NGX_LOG_DEBUG_HTTP        0x100
+ #define NGX_LOG_DEBUG_MAIL        0x200
+ #define NGX_LOG_DEBUG_MYSQL       0x400
++#define NGX_LOG_DEBUG_TCP         0x800
+ 
+ /*
+  * do not forget to update debug_levels[] in src/core/ngx_log.c
+@@ -37,7 +38,7 @@
+  */
+ 
+ #define NGX_LOG_DEBUG_FIRST       NGX_LOG_DEBUG_CORE
+-#define NGX_LOG_DEBUG_LAST        NGX_LOG_DEBUG_MYSQL
++#define NGX_LOG_DEBUG_LAST        NGX_LOG_DEBUG_TCP
+ #define NGX_LOG_DEBUG_CONNECTION  0x80000000
+ #define NGX_LOG_DEBUG_ALL         0x7ffffff0
+ 
+@@ -48,7 +49,6 @@
+ struct ngx_log_s {
+     ngx_uint_t           log_level;
+     ngx_open_file_t     *file;
+-
+     ngx_atomic_uint_t    connection;
+ 
+     ngx_log_handler_pt   handler;
+@@ -61,6 +61,8 @@
+      */
+ 
+     char                *action;
++
++    ngx_socket_t         fd;//NLOG
+ };
+ 
+ 

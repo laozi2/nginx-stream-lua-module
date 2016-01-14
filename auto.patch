@@ -1,0 +1,181 @@
+diff -uNr nginx-1.4.1/auto/make nginx-tcp-lua-module/auto/make
+--- nginx-1.4.1/auto/make	2016-01-14 11:25:46.003991783 +0800
++++ nginx-tcp-lua-module/auto/make	2016-01-14 10:30:35.157996262 +0800
+@@ -10,7 +10,9 @@
+          $NGX_OBJS/src/http $NGX_OBJS/src/http/modules \
+ 	 $NGX_OBJS/src/http/modules/perl \
+          $NGX_OBJS/src/mail \
+-         $NGX_OBJS/src/misc
++         $NGX_OBJS/src/misc  \
++         $NGX_OBJS/src/tcp   \
++         $NGX_OBJS/src/tcp/ngx_tcp_ssl_module
+ 
+ 
+ ngx_objs_dir=$NGX_OBJS$ngx_regex_dirsep
+@@ -35,7 +37,7 @@
+ 
+ # ALL_INCS, required by the addons and by OpenWatcom C precompiled headers
+ 
+-ngx_incs=`echo $CORE_INCS $NGX_OBJS $HTTP_INCS $MAIL_INCS\
++ngx_incs=`echo $CORE_INCS $NGX_OBJS $HTTP_INCS $MAIL_INCS $TCP_INCS\
+     | sed -e "s/  *\([^ ][^ ]*\)/$ngx_regex_cont$ngx_include_opt\1/g" \
+           -e "s/\//$ngx_regex_dirsep/g"`
+ 
+@@ -121,6 +123,32 @@
+ fi
+ 
+ 
++# the tcp dependences and include paths
++
++if [ $TCP = YES ]; then
++
++    ngx_all_srcs="$ngx_all_srcs $TCP_SRCS"
++
++    ngx_deps=`echo $TCP_DEPS \
++        | sed -e "s/  *\([^ ][^ ]*\)/$ngx_regex_cont\1/g" \
++              -e "s/\//$ngx_regex_dirsep/g"`
++
++    ngx_incs=`echo $TCP_INCS \
++        | sed -e "s/  *\([^ ][^ ]*\)/$ngx_regex_cont$ngx_include_opt\1/g" \
++              -e "s/\//$ngx_regex_dirsep/g"`
++
++    cat << END                                                >> $NGX_MAKEFILE
++
++TCP_DEPS = $ngx_deps
++
++
++TCP_INCS = $ngx_include_opt$ngx_incs
++
++END
++
++fi
++
++
+ ngx_all_srcs="$ngx_all_srcs $NGX_MISC_SRCS"
+ 
+ 
+@@ -332,6 +360,36 @@
+ fi
+ 
+ 
++# the tcp sources
++
++if [ $TCP = YES ]; then
++
++    if test -n "$NGX_PCH"; then
++        ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) $ngx_use_pch \$(ALL_INCS)"
++    else
++        ngx_cc="\$(CC) $ngx_compile_opt \$(CFLAGS) \$(CORE_INCS) \$(TCP_INCS)"
++    fi
++
++    for ngx_src in $TCP_SRCS
++    do
++        ngx_src=`echo $ngx_src | sed -e "s/\//$ngx_regex_dirsep/g"`
++        ngx_obj=`echo $ngx_src \
++            | sed -e "s#^\(.*\.\)cpp\\$#$ngx_objs_dir\1$ngx_objext#g" \
++                  -e "s#^\(.*\.\)cc\\$#$ngx_objs_dir\1$ngx_objext#g" \
++                  -e "s#^\(.*\.\)c\\$#$ngx_objs_dir\1$ngx_objext#g" \
++                  -e "s#^\(.*\.\)S\\$#$ngx_objs_dir\1$ngx_objext#g"`
++
++        cat << END                                            >> $NGX_MAKEFILE
++
++$ngx_obj:	\$(CORE_DEPS) \$(TCP_DEPS)$ngx_cont$ngx_src
++	$ngx_cc$ngx_tab$ngx_objout$ngx_obj$ngx_tab$ngx_src$NGX_AUX
++
++END
++     done
++
++fi
++
++
+ # the addons sources
+ 
+ if test -n "$NGX_ADDON_SRCS"; then
+diff -uNr nginx-1.4.1/auto/modules nginx-tcp-lua-module/auto/modules
+--- nginx-1.4.1/auto/modules	2016-01-14 11:25:46.006991783 +0800
++++ nginx-tcp-lua-module/auto/modules	2016-01-14 10:30:35.162996262 +0800
+@@ -417,6 +417,11 @@
+     USE_OPENSSL=YES
+ fi
+ 
++if [ $TCP_SSL = YES ]; then
++    have=NGX_TCP_SSL . auto/have
++    USE_OPENSSL=YES
++fi
++
+ 
+ modules="$CORE_MODULES $EVENT_MODULES"
+ 
+@@ -491,6 +496,17 @@
+     CORE_LIBS="$CORE_LIBS -lstdc++"
+ fi
+ 
++if [ $TCP = YES ]; then
++
++    if [ $TCP_SSL = YES ]; then
++        modules="$modules $TCP_SSL_MODULE"
++        TCP_DEPS="$TCP_DEPS $TCP_SSL_DEPS"
++        TCP_SRCS="$TCP_SRCS $TCP_SSL_SRCS"
++    fi
++
++    modules="$modules $TCP_MODULES"
++fi
++
+ 
+ cat << END                                    > $NGX_MODULES_C
+ 
+diff -uNr nginx-1.4.1/auto/options nginx-tcp-lua-module/auto/options
+--- nginx-1.4.1/auto/options	2016-01-14 11:25:46.012991783 +0800
++++ nginx-tcp-lua-module/auto/options	2016-01-14 10:30:35.168996262 +0800
+@@ -110,6 +110,10 @@
+ MAIL_IMAP=YES
+ MAIL_SMTP=YES
+ 
++#TCP
++TCP=NO
++TCP_SSL=NO
++
+ NGX_ADDONS=
+ 
+ USE_PCRE=NO
+@@ -268,6 +272,10 @@
+         --without-mail_imap_module)      MAIL_IMAP=NO               ;;
+         --without-mail_smtp_module)      MAIL_SMTP=NO               ;;
+ 
++        #TCP
++        --with-tcp)                      TCP=YES                    ;;
++        --with-tcp_ssl_module)           TCP_SSL=YES                ;;
++
+         --with-google_perftools_module)  NGX_GOOGLE_PERFTOOLS=YES   ;;
+         --with-cpp_test_module)          NGX_CPP_TEST=YES           ;;
+ 
+@@ -414,6 +422,9 @@
+ 
+   --without-http                     disable HTTP server
+   --without-http-cache               disable HTTP cache
++  
++  --with-tcp                         enable tcp server
++  --with-tcp_ssl_module              enable ngx_tcp_ssl_module
+ 
+   --with-mail                        enable POP3/IMAP4/SMTP proxy module
+   --with-mail_ssl_module             enable ngx_mail_ssl_module
+diff -uNr nginx-1.4.1/auto/sources nginx-tcp-lua-module/auto/sources
+--- nginx-1.4.1/auto/sources	2016-01-14 11:25:46.037991783 +0800
++++ nginx-tcp-lua-module/auto/sources	2016-01-14 10:30:35.192996262 +0800
+@@ -543,3 +543,16 @@
+ NGX_GOOGLE_PERFTOOLS_SRCS=src/misc/ngx_google_perftools_module.c
+ 
+ NGX_CPP_TEST_SRCS=src/misc/ngx_cpp_test_module.cpp
++
++#TCP MODULES
++TCP_MODULES="ngx_tcp_module ngx_tcp_core_module"
++
++TCP_INCS="src/tcp src/tcp/ngx_tcp_ssl_module"
++TCP_DEPS="src/tcp/ngx_tcp.h"
++TCP_SRCS="src/tcp/ngx_tcp.c \
++            src/tcp/ngx_tcp_core_module.c \
++            src/tcp/ngx_tcp_handler.c"
++
++TCP_SSL_MODULE="ngx_tcp_ssl_module"
++TCP_SSL_DEPS="src/tcp/ngx_tcp_ssl_module/ngx_tcp_ssl_module.h"
++TCP_SSL_SRCS="src/tcp/ngx_tcp_ssl_module/ngx_tcp_ssl_module.c"
