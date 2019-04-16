@@ -1,6 +1,8 @@
 Name
 ====
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/814dbaad0d1b4379a03533bcb6546a77)](https://app.codacy.com/app/laozi2/nginx-stream-lua-module?utm_source=github.com&utm_medium=referral&utm_content=laozi2/nginx-stream-lua-module&utm_campaign=Badge_Grade_Dashboard)
+
 ngx_tcp_module - A tcp stream module for nginx. 
 
 ngx_tcp_lua_module - Embed the power of Lua into Nginx Servers. Work under tcp stream mode.
