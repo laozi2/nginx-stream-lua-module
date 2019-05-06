@@ -1564,7 +1564,7 @@ ngx_tcp_lua_socket_send(ngx_tcp_session_t *s,
     
     b = u->buf_out;
     
-    //if (b == NULL){
+    //if (b == NULL) {
     //    return NGX_OK;
     //}
     
@@ -1584,7 +1584,7 @@ ngx_tcp_lua_socket_send(ngx_tcp_session_t *s,
     if (n > 0) {
         b->pos += n;
         
-        if(b->pos >= b->last){
+        if (b->pos >= b->last) {
             //send done
             
             ngx_log_debug1(NGX_LOG_DEBUG_TCP, c->log, 0,

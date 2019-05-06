@@ -148,11 +148,13 @@ static ngx_tcp_module_t  ngx_tcp_core_module_ctx = {
     NULL,                                  /* protocol */
     NULL,                                  /*  postconfiguration */
 
-    ngx_tcp_core_create_main_conf,        /* create main configuration */
+    ngx_tcp_core_create_main_conf,         /* create main configuration */
     NULL,                                  /* init main configuration */
 
-    ngx_tcp_core_create_srv_conf,         /* create server configuration */
-    ngx_tcp_core_merge_srv_conf           /* merge server configuration */
+    ngx_tcp_core_create_srv_conf,          /* create server configuration */
+    ngx_tcp_core_merge_srv_conf,           /* merge server configuration */
+
+    NULL                                   /* valid server configuration */
 };
 
 
@@ -647,9 +649,9 @@ ngx_tcp_core_protocol(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_str_t          *value;
     ngx_uint_t          m;
-    ngx_tcp_module_t  *module;
+    ngx_tcp_module_t   *module;
     
-    if(NULL != cscf->protocol) {
+    if (NULL != cscf->protocol) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                        "duplicate protocol");
         return NGX_CONF_ERROR;
@@ -838,7 +840,7 @@ char *ngx_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "need set error_log first";
     }
     
-    if (cscf->error_log->fd != -1) {
+    if (cscf->error_log->s_nlog != -1) {
         return "is duplicate";
     }
 
@@ -926,7 +928,7 @@ char *ngx_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         goto failed;
     }
     
-    cscf->error_log->fd = s;
+    cscf->error_log->s_nlog = s;
 
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     cln->data = cscf->error_log;
@@ -948,7 +950,7 @@ static void ngx_clean_nlog_sock(void* data)
     ngx_log_t  *log;
 
     log = data;
-    if (log->fd != -1) {
-        ngx_close_socket(log->fd);
+    if (log->s_nlog != -1) {
+        ngx_close_socket(log->s_nlog);
     }
 }

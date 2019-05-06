@@ -149,6 +149,8 @@ static ngx_tcp_module_t  ngx_tcp_ssl_module_ctx = {
     NULL,                                  /* init main configuration */
     ngx_tcp_ssl_create_srv_conf,           /* create server configuration */
     ngx_tcp_ssl_merge_srv_conf,            /* merge server configuration */
+
+    NULL                                   /* valid server configuration */
 };
 
 

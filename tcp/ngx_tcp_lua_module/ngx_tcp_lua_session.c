@@ -46,7 +46,7 @@ ngx_tcp_lua_log_session(ngx_tcp_session_t* s)
     ngx_msec_int_t      ms;
     ngx_connection_t   *c;
 
-    if(s->log_handler){
+    if (s->log_handler) {
         s->log_handler(s);
         return;
     }

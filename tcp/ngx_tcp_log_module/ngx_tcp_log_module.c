@@ -44,7 +44,7 @@ typedef struct {
     time_t                      disk_full_time;
     time_t                      error_log_time;
     ngx_tcp_log_fmt_t           *format;
-    ngx_socket_t                fd;//NLOG
+    ngx_socket_t                s_nlog;//NLOG
 } ngx_tcp_log_t;
 
 
@@ -160,6 +160,8 @@ static ngx_tcp_module_t  ngx_tcp_log_module_ctx = {
     NULL,                                  /* init main configuration */
     ngx_tcp_log_create_srv_conf,           /* create server configuration */
     ngx_tcp_log_merge_srv_conf,            /* merge server configuration */
+
+    NULL                                   /* valid server configuration */
 };
 
 
@@ -321,11 +323,11 @@ ngx_tcp_log_write(ngx_tcp_session_t *s, ngx_tcp_log_t *log, u_char *buf,
     // if (log->script == NULL) {
     name = log->file->name.data;
 /*------------------------NLOG------------------------*/
-    if (log->fd == -1) {
+    if (log->s_nlog == -1) {
         n = ngx_write_fd(log->file->fd, buf, len);
     }
     else {
-        n = send(log->fd, buf, len, 0);
+        n = send(log->s_nlog, buf, len, 0);
     }
 /*------------------------NLOG------------------------*/
 
@@ -791,7 +793,7 @@ ngx_tcp_log_set_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_memzero(log, sizeof(ngx_tcp_log_t));
 
-    log->fd = -1; //NLOG
+    log->s_nlog = -1; //NLOG
 
     log->file = ngx_conf_open_file(cf->cycle, &value[1]);
     if (log->file == NULL) {
@@ -799,12 +801,12 @@ ngx_tcp_log_set_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
 
-    if (cf->args->nelts > 3){
+    if (cf->args->nelts > 3) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "too many parameter , not more than 3 parameter");
         return NGX_CONF_ERROR;
     }
-    else if (cf->args->nelts == 3){
+    else if (cf->args->nelts == 3) {
         name = value[2];
 
         if (ngx_strcmp(name.data, "combined") == 0) {
@@ -1185,7 +1187,7 @@ char *ngx_access_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "need set access_log first";
     }
 
-    if (log->fd != -1) {
+    if (log->s_nlog != -1) {
         return "is duplicate";
     }
 
@@ -1272,7 +1274,7 @@ char *ngx_access_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         goto failed;
     }
     
-    log->fd = s;
+    log->s_nlog = s;
 
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     cln->data = log;
@@ -1294,9 +1296,9 @@ static void ngx_clean_nlog_sock(void* data)
     ngx_tcp_log_t  *log;
 
     log = data;
-    if (log->fd != -1) {
-        ngx_close_socket(log->fd);
-        log->fd = -1;
+    if (log->s_nlog != -1) {
+        ngx_close_socket(log->s_nlog);
+        log->s_nlog = -1;
     }
 }
 /*------------------------NLOG------------------------*/

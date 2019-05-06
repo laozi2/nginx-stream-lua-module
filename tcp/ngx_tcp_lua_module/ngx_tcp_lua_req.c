@@ -259,7 +259,7 @@ ngx_tcp_lua_ngx_echo(lua_State *L, unsigned newline)
         //lua_pushliteral(L, "ok");
         lua_pushnil(L);
     }
-    else if (n == NGX_AGAIN){
+    else if (n == NGX_AGAIN) {
         //lua_pushnumber(L, (lua_Number) 0);
         lua_pushnil(L);
         lua_pushliteral(L, "EAGAIN error");
@@ -690,7 +690,7 @@ ngx_tcp_lua_ngx_wait_next_request(lua_State *L)
     }
     
     if (c->read->ready) {
-        if(ngx_tcp_lua_init_light_session(s) != NGX_OK){
+        if (ngx_tcp_lua_init_light_session(s) != NGX_OK) {
             c->close = 1;
             goto yield;
         }

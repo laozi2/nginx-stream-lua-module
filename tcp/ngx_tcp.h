@@ -144,9 +144,9 @@ struct ngx_tcp_cleanup_s {
 typedef struct {
     ngx_tcp_protocol_t     *protocol;
     
-    size_t                 connection_pool_size;
-    size_t                 session_pool_size;
-    size_t                 client_max_body_size;
+    size_t                  connection_pool_size;
+    size_t                  session_pool_size;
+    size_t                  client_max_body_size;
 
     ngx_msec_t              read_timeout;
     ngx_msec_t              send_timeout;
@@ -170,7 +170,7 @@ typedef struct {
 } ngx_tcp_core_srv_conf_t;
 
 
-struct ngx_tcp_session_s{
+struct ngx_tcp_session_s {
 //    uint32_t             signature;         /* "TCP" */
 
     ngx_connection_t       *connection;

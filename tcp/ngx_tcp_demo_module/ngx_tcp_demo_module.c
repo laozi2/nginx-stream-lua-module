@@ -34,7 +34,7 @@ typedef struct {
 } ngx_tcp_demo_srv_conf_t;
 
 
-static ngx_int_t ngx_tcp_demoe_postconfiguration(ngx_conf_t *cf);
+static ngx_int_t ngx_tcp_demo_postconfiguration(ngx_conf_t *cf);
 static void *ngx_tcp_demo_create_main_conf(ngx_conf_t *cf);
 static char *ngx_tcp_demo_init_main_conf(ngx_conf_t *cf, void *conf);
 static void *ngx_tcp_demo_create_srv_conf(ngx_conf_t *cf);
@@ -85,13 +85,15 @@ static ngx_command_t  ngx_tcp_demo_commands[] = {
 
 static ngx_tcp_module_t  ngx_tcp_demo_module_ctx = {
     &ngx_tcp_demo_protocol,               /* protocol */
-    ngx_tcp_demoe_postconfiguration,      /* postconfiguration */
+    ngx_tcp_demo_postconfiguration,       /* postconfiguration */
 
     ngx_tcp_demo_create_main_conf,        /* create main configuration */
     ngx_tcp_demo_init_main_conf,          /* init main configuration */
 
     ngx_tcp_demo_create_srv_conf,         /* create server configuration */
-    ngx_tcp_demo_merge_srv_conf           /* merge server configuration */
+    ngx_tcp_demo_merge_srv_conf,          /* merge server configuration */
+
+    NULL                                  /* valid server configuration */
 };
 
 
@@ -113,7 +115,7 @@ ngx_module_t  ngx_tcp_demo_module = {
 //--------------configure--------------------
 
 static ngx_int_t
-ngx_tcp_demoe_postconfiguration(ngx_conf_t *cf)
+ngx_tcp_demo_postconfiguration(ngx_conf_t *cf)
 {
     return NGX_OK;
 }
@@ -285,7 +287,7 @@ ngx_tcp_demo_init_connection_handler(ngx_event_t *rev)
 
     ngx_reusable_connection(c, 0);
     
-    if(ngx_tcp_demo_init_session(s) != NGX_OK){
+    if (ngx_tcp_demo_init_session(s) != NGX_OK) {
         ngx_tcp_close_connection(c);
         return;
     }
@@ -313,7 +315,7 @@ ngx_tcp_demo_init_session(ngx_tcp_session_t* s)
     c->requests++;
     
     pool = s->pool;
-    if(NULL == pool){
+    if (NULL == pool) {
         pool = ngx_create_pool(cscf->session_pool_size, c->log);
         if (NULL == pool) {
             ngx_log_error(NGX_LOG_ERR, c->log, 0,
@@ -325,7 +327,7 @@ ngx_tcp_demo_init_session(ngx_tcp_session_t* s)
     }
     
     session_ctx = ngx_pcalloc(s->pool, sizeof(ngx_tcp_demo_session_ctx_t));
-    if(NULL == session_ctx){
+    if (NULL == session_ctx) {
         ngx_log_error(NGX_LOG_ERR, c->log, 0,
                          "ngx_demo_init_session : ngx_pcalloc failed");
         
@@ -381,10 +383,10 @@ ngx_tcp_demo_process_header_handler(ngx_event_t *rev)
     b = c->buffer;
     size = b->last - b->pos;
     
-    if(size < NGX_TCP_DEMO_HEADER_LEN){
+    if (size < NGX_TCP_DEMO_HEADER_LEN) {
         n = c->recv(c, b->last, NGX_TCP_DEMO_HEADER_LEN - size);
         
-        if(n == NGX_AGAIN){
+        if (n == NGX_AGAIN) {
             if (!rev->timer_set) {
                 ngx_add_timer(rev, cscf->read_timeout);
             }
@@ -410,7 +412,7 @@ ngx_tcp_demo_process_header_handler(ngx_event_t *rev)
         
         b->last += n;
         
-        if(b->last - b->pos < NGX_TCP_DEMO_HEADER_LEN){
+        if (b->last - b->pos < NGX_TCP_DEMO_HEADER_LEN) {
             if (!rev->timer_set) {
                 ngx_add_timer(rev, cscf->read_timeout);
             }
@@ -425,7 +427,7 @@ ngx_tcp_demo_process_header_handler(ngx_event_t *rev)
 
     size = (size_t)ntohl(*(uint32_t*)(b->pos));
 
-    if(size < NGX_TCP_DEMO_MIN_LEN || size > cscf->client_max_body_size){ //4
+    if (size < NGX_TCP_DEMO_MIN_LEN || size > cscf->client_max_body_size) { //4
         ngx_log_error(NGX_LOG_INFO, c->log, 0, "body_len %z", size);
         ngx_tcp_demo_close_session(s);
         return;
@@ -435,7 +437,7 @@ ngx_tcp_demo_process_header_handler(ngx_event_t *rev)
     ctx->body_len = size;
         
     b = ngx_create_temp_buf(s->pool, size);
-    if(NULL == b){
+    if (NULL == b) {
         ngx_tcp_demo_close_session(s);
         return;
     }
@@ -473,10 +475,10 @@ ngx_tcp_demo_process_body_handler(ngx_event_t *rev)
     ctx = s->ctx;
     b = ctx->buffer_in;
     
-    if(b->last - b->pos < (signed)ctx->body_len){
+    if (b->last - b->pos < (signed)ctx->body_len) {
         n = c->recv(c, b->last, b->end - b->last);
         
-        if(n == NGX_AGAIN){
+        if (n == NGX_AGAIN) {
             if (!rev->timer_set) {
                 cscf = ngx_tcp_get_module_srv_conf(s,ngx_tcp_core_module);
                 ngx_add_timer(rev, cscf->read_timeout);
@@ -503,7 +505,7 @@ ngx_tcp_demo_process_body_handler(ngx_event_t *rev)
         
         b->last += n;
         
-        if(b->last - b->pos < (signed)ctx->body_len){
+        if (b->last - b->pos < (signed)ctx->body_len) {
             if (!rev->timer_set) {
                 cscf = ngx_tcp_get_module_srv_conf(s,ngx_tcp_core_module);
                 ngx_add_timer(rev, cscf->read_timeout);
@@ -607,7 +609,7 @@ ngx_tcp_demo_reset_session(ngx_tcp_session_t *s)
     c = s->connection;
     
     b = c->buffer;
-    if(b){
+    if (b) {
         if (ngx_pfree(c->pool, b->start) == NGX_OK) {
             b->start = NULL;
 
@@ -670,17 +672,17 @@ ngx_tcp_demo_finalize_session(ngx_tcp_session_t* s)
     
     ngx_tcp_test_reading(s);
     
-    if(c->error){
+    if (c->error) {
         ngx_tcp_demo_close_session(s);
         return;
     }
     
     //char tmp[1] = {0};
     //ssize_t n = recv(c->fd, tmp, 1, MSG_PEEK);
-    //if(n < 0){
+    //if (n < 0) {
     //    rev->ready = 0;
     //}
-    if(rev->ready){
+    if (rev->ready) {
         ngx_post_event(rev, &ngx_posted_events);
         return;
     }
@@ -797,7 +799,7 @@ ngx_tcp_demo_keepalive_handler(ngx_event_t *rev)
     c->idle = 0;
     ngx_reusable_connection(c, 0);
     
-    if(ngx_tcp_demo_init_session(s) != NGX_OK){
+    if (ngx_tcp_demo_init_session(s) != NGX_OK) {
         ngx_tcp_demo_close_session(s);
         return;
     }
@@ -826,10 +828,10 @@ ngx_tcp_demo_send(ngx_tcp_session_t* s,ngx_tcp_demo_post_handler_pt post_handler
     c = s->connection;
     ctx = s->ctx;
     
-    if(post_handler){
+    if (post_handler) {
         ctx->post_handler = post_handler;
     }
-    else{
+    else {
         ctx->post_handler = ngx_tcp_demo_finalize_session;
     }
     
@@ -861,13 +863,13 @@ ngx_tcp_demo_send_handler(ngx_event_t *wev)
         return;
     }
     
-    if(NULL == b){
+    if (NULL == b) {
         //nothing to send
         goto done;
     }
     
     size = b->last - b->pos;
-    if(size <= 0){
+    if (size <= 0) {
         //send done or nothing to send
         goto done;
     }
@@ -878,7 +880,7 @@ ngx_tcp_demo_send_handler(ngx_event_t *wev)
         b->pos += n;
         
         //n < size
-        if(b->pos < b->last){
+        if (b->pos < b->last) {
             if (!wev->timer_set) {
                 cscf = ngx_tcp_get_module_srv_conf(s,ngx_tcp_core_module);
                 ngx_add_timer(wev, cscf->send_timeout);
@@ -900,7 +902,7 @@ ngx_tcp_demo_send_handler(ngx_event_t *wev)
         return;
     }
     
-    if(n == NGX_AGAIN){
+    if (n == NGX_AGAIN) {
         if (!wev->timer_set) {
             cscf = ngx_tcp_get_module_srv_conf(s,ngx_tcp_core_module);
             ngx_add_timer(wev, cscf->send_timeout);
@@ -936,7 +938,7 @@ ngx_tcp_demo_log_session(ngx_tcp_session_t* s)
     ngx_msec_int_t      ms;
     ngx_connection_t   *c;
 
-    if(s->log_handler){
+    if (s->log_handler) {
         s->log_handler(s);
         return;
     }

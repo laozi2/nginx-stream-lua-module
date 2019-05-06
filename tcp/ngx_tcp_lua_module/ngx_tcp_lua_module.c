@@ -163,8 +163,10 @@ static ngx_tcp_module_t  ngx_tcp_lua_module_ctx = {
     ngx_tcp_lua_create_main_conf,       /*  create main configuration */
     ngx_tcp_lua_init_main_conf,         /*  init main configuration */
 
-    ngx_tcp_lua_create_srv_conf,            /* create server configuration */
-    ngx_tcp_lua_merge_srv_conf              /* merge server configuration */
+    ngx_tcp_lua_create_srv_conf,        /* create server configuration */
+    ngx_tcp_lua_merge_srv_conf,         /* merge server configuration */
+
+    NULL                                /* valid server configuration */
 };
 
 
@@ -211,7 +213,7 @@ ngx_tcp_lua_init_connection_handler(ngx_event_t *rev)
     
     ngx_reusable_connection(c, 0);
     
-    if(ngx_tcp_lua_init_session(s) != NGX_OK){
+    if (ngx_tcp_lua_init_session(s) != NGX_OK) {
         ngx_tcp_close_connection(c);
         return;
     }
@@ -249,7 +251,7 @@ ngx_tcp_lua_init_session(ngx_tcp_session_t* s)
 
     //assert(s->ctx == NULL);
     s->ctx = ngx_pcalloc(c->pool, sizeof(ngx_tcp_lua_ctx_t)); //s->pool
-    if(NULL == s->ctx){
+    if (NULL == s->ctx) {
         ngx_log_error(NGX_LOG_ERR, c->log, 0,
                         "ngx_tcp_lua_init_session : ngx_pcalloc failed");
         
@@ -571,7 +573,7 @@ ngx_tcp_lua_init(ngx_conf_t *cf)
     //ngx_tcp_lua_srv_conf_t    *lscf;
     //ngx_tcp_core_srv_conf_t   *cscf;
 
-    if(ngx_tcp_lua_protocol.set == NGX_TCP_PROTOCOL_UNSET){
+    if (ngx_tcp_lua_protocol.set == NGX_TCP_PROTOCOL_UNSET) {
         return NGX_OK;
     }
 

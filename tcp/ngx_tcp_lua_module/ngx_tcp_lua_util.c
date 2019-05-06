@@ -850,20 +850,20 @@ void
 ngx_tcp_lua_stack_dump(lua_State* L,const char* prefix)
 {
     int i;
-    if(prefix){
+    if (prefix) {
         printf("%s: ",prefix);
     }
 
     int top = lua_gettop(L);
-    if(top < 1){
+    if (top < 1) {
         printf("stack is empty\n");
         return;
     }
     
     printf("bottom----->top\n\t");
-    for(i=1;i<=top;i++){
+    for (i=1; i<=top; i++) {
         int t = lua_type(L,i);
-        switch(t){
+        switch (t) {
         
         case LUA_TSTRING:
             printf("%d/%d[%s]",i,i-top-1,lua_tostring(L,i));
