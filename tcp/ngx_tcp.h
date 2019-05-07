@@ -229,6 +229,8 @@ typedef struct {
     void                       *(*create_srv_conf)(ngx_conf_t *cf);
     char                       *(*merge_srv_conf)(ngx_conf_t *cf, void *prev,
                                       void *conf);
+
+    void                       (*valid_srv_conf)(ngx_conf_t *cf);//to notify this srv_conf has its protocol set
 } ngx_tcp_module_t;
 
 

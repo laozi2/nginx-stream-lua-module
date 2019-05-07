@@ -256,15 +256,6 @@ ngx_tcp_core_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
                               prev->connection_pool_size, 512);//default 0.5k
     ngx_conf_merge_size_value(conf->client_max_body_size,
                               prev->client_max_body_size, 1024);//default 1k
-
-
-    if (conf->protocol == NULL) {
-        //ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-        //              "unknown tcp protocol for server in %s:%ui",
-        //              conf->file_name, conf->line);
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,"no tcp protocol for server");
-        return NGX_CONF_ERROR;
-    }
     
     if (conf->error_log == NULL) {
         if (prev->error_log) {
@@ -372,7 +363,13 @@ ngx_tcp_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (rv == NGX_CONF_OK && !cscf->listen) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                              "server{ need command 'listen'");
+                              "server { need command 'listen'");
+        return NGX_CONF_ERROR;
+    }
+
+    if (rv == NGX_CONF_OK && NULL == cscf->protocol) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                              "server { need command 'protocol'");
         return NGX_CONF_ERROR;
     }
 
@@ -672,6 +669,11 @@ ngx_tcp_core_protocol(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             cscf->protocol = module->protocol;
             module->protocol->set = NGX_TCP_PROTOCOL_SET;
 
+            //to notify module has protocol, this srv_conf is valid
+            if (module->valid_srv_conf) {
+                module->valid_srv_conf(cf);
+            }
+
             return NGX_CONF_OK;
         }
     }
@@ -728,8 +730,6 @@ ngx_tcp_core_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     if (cscf->error_log == NULL) {
         return NGX_CONF_ERROR;
     }
-
-    cscf->error_log->fd = -1;
 
     if (cf->args->nelts == 2) {
         cscf->error_log->log_level = NGX_LOG_ERR;
@@ -840,7 +840,7 @@ char *ngx_nlog(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "need set error_log first";
     }
     
-    if (cscf->error_log->s_nlog != -1) {
+    if (cscf->error_log->s_nlog > 0) {
         return "is duplicate";
     }
 
@@ -950,7 +950,8 @@ static void ngx_clean_nlog_sock(void* data)
     ngx_log_t  *log;
 
     log = data;
-    if (log->s_nlog != -1) {
+    if (log->s_nlog > 0) {
         ngx_close_socket(log->s_nlog);
+        log->s_nlog = 0;
     }
 }

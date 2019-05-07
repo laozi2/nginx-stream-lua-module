@@ -1,6 +1,6 @@
 diff -uNr nginx-1.4.1/src/http/modules/ngx_http_log_module.c nginx-tcp-lua-module/src/http/modules/ngx_http_log_module.c
---- nginx-1.4.1/src/http/modules/ngx_http_log_module.c	2016-01-14 11:25:46.571991783 +0800
-+++ nginx-tcp-lua-module/src/http/modules/ngx_http_log_module.c	2016-01-14 10:30:35.731996261 +0800
+--- nginx-1.4.1/src/http/modules/ngx_http_log_module.c	2013-05-06 18:26:50.000000000 +0800
++++ nginx-tcp-lua-module/src/http/modules/ngx_http_log_module.c	2019-05-07 18:11:50.993019417 +0800
 @@ -13,7 +13,6 @@
  #include <zlib.h>
  #endif
@@ -13,7 +13,7 @@ diff -uNr nginx-1.4.1/src/http/modules/ngx_http_log_module.c nginx-tcp-lua-modul
      time_t                      disk_full_time;
      time_t                      error_log_time;
      ngx_http_log_fmt_t         *format;
-+    ngx_socket_t                fd;//NLOG
++    ngx_socket_t                s_nlog;//NLOG
  } ngx_http_log_t;
  
  
@@ -59,22 +59,22 @@ diff -uNr nginx-1.4.1/src/http/modules/ngx_http_log_module.c nginx-tcp-lua-modul
          } else {
 -            n = ngx_write_fd(log->file->fd, buf, len);
 +/*------------------------NLOG------------------------*/
-+            if (log->fd == -1) {
++            if (log->s_nlog == -1) {
 +                n = ngx_write_fd(log->file->fd, buf, len);
 +            }
 +            else{
-+                n = send(log->fd, buf, len, 0);
++                n = send(log->s_nlog, buf, len, 0);
 +            }
 +/*------------------------NLOG------------------------*/
          }
  #else
 -        n = ngx_write_fd(log->file->fd, buf, len);
 +/*------------------------NLOG------------------------*/
-+        if (log->fd == -1) {
++        if (log->s_nlog == -1) {
 +            n = ngx_write_fd(log->file->fd, buf, len);
 +        }
 +        else{
-+            n = send(log->fd, buf, len, 0);
++            n = send(log->s_nlog, buf, len, 0);
 +        }
 +/*------------------------NLOG------------------------*/
  #endif
@@ -134,7 +134,7 @@ diff -uNr nginx-1.4.1/src/http/modules/ngx_http_log_module.c nginx-tcp-lua-modul
  
      ngx_memzero(log, sizeof(ngx_http_log_t));
  
-+    log->fd = -1; //NLOG
++    log->s_nlog = -1; //NLOG
 +
      n = ngx_http_script_variables_count(&value[1]);
  
@@ -266,7 +266,7 @@ diff -uNr nginx-1.4.1/src/http/modules/ngx_http_log_module.c nginx-tcp-lua-modul
 +        return "need set access_log first";
 +    }
 +
-+    if (log->fd != -1) {
++    if (log->s_nlog != -1) {
 +        return "is duplicate";
 +    }
 +
@@ -354,7 +354,7 @@ diff -uNr nginx-1.4.1/src/http/modules/ngx_http_log_module.c nginx-tcp-lua-modul
 +        goto failed;
 +    }
 +    
-+    log->fd = s;
++    log->s_nlog = s;
 +
 +    cln = ngx_pool_cleanup_add(cf->pool, 0);
 +    cln->data = log;
@@ -376,9 +376,9 @@ diff -uNr nginx-1.4.1/src/http/modules/ngx_http_log_module.c nginx-tcp-lua-modul
 +    ngx_http_log_t  *log;
 +
 +    log = data;
-+    if (log->fd != -1) {
-+        ngx_close_socket(log->fd);
-+        log->fd = -1;
++    if (log->s_nlog != -1) {
++        ngx_close_socket(log->s_nlog);
++        log->s_nlog = -1;
 +    }
 +}
 +/*------------------------NLOG------------------------*/

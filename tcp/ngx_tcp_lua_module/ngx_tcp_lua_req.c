@@ -753,7 +753,7 @@ ngx_tcp_lua_req_keepalive_handler(ngx_tcp_session_t *s)
     if (!c->read->ready) {
         if (!c->error) {
             ngx_log_error(NGX_LOG_INFO, c->log, 0, "weird, no event call this function");
-			return;// XXX . add return due to this weird thing really happened.
+            return;// XXX . add return due to this weird thing really happened.
         }
         ngx_tcp_lua_close_session(s);
         return;

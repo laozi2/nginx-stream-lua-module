@@ -1,6 +1,6 @@
 diff -uNr nginx-1.4.1/src/core/ngx_log.c nginx-tcp-lua-module/src/core/ngx_log.c
---- nginx-1.4.1/src/core/ngx_log.c	2016-01-14 11:25:46.260991783 +0800
-+++ nginx-tcp-lua-module/src/core/ngx_log.c	2016-01-14 10:30:35.421996262 +0800
+--- nginx-1.4.1/src/core/ngx_log.c	2013-05-06 18:26:50.000000000 +0800
++++ nginx-tcp-lua-module/src/core/ngx_log.c	2019-05-07 18:11:48.945019529 +0800
 @@ -8,9 +8,9 @@
  #include <ngx_config.h>
  #include <ngx_core.h>
@@ -45,13 +45,13 @@ diff -uNr nginx-1.4.1/src/core/ngx_log.c nginx-tcp-lua-module/src/core/ngx_log.c
 -
 -    (void) ngx_write_fd(log->file->fd, errstr, p - errstr);
 +/*------------------------NLOG------------------------*/
-+    if (log->fd == -1) {
++    if (log->s_nlog == 0) {
 +/*------------------------NLOG------------------------*/    
 +        (void) ngx_write_fd(log->file->fd, errstr, p - errstr);
 +/*------------------------NLOG------------------------*/
 +    }
 +    else {
-+        (void) send(log->fd, errstr, p - errstr, 0);
++        (void) send(log->s_nlog, errstr, p - errstr, 0);
 +    }
 +/*------------------------NLOG------------------------*/    
  
@@ -61,12 +61,12 @@ diff -uNr nginx-1.4.1/src/core/ngx_log.c nginx-tcp-lua-module/src/core/ngx_log.c
          return "is duplicate";
      }
  
-+    cf->cycle->new_log.fd = -1;//NLOG
++    //cf->cycle->new_log.fd = -1;//NLOG
 +
      value = cf->args->elts;
  
      if (ngx_strcmp(value[1].data, "stderr") == 0) {
-@@ -457,3 +474,207 @@
+@@ -457,3 +474,213 @@
  
      return ngx_log_set_levels(cf, &cf->cycle->new_log);
  }
@@ -159,7 +159,7 @@ diff -uNr nginx-1.4.1/src/core/ngx_log.c nginx-tcp-lua-module/src/core/ngx_log.c
 +        return "need set error_log first";
 +    }
 +    
-+    if (cf->cycle->new_log.fd != -1) {
++    if (cf->cycle->new_log.s_nlog > 0) {
 +        return "is duplicate";
 +    }
 +
@@ -219,6 +219,12 @@ diff -uNr nginx-1.4.1/src/core/ngx_log.c nginx-tcp-lua-module/src/core/ngx_log.c
 +        return NGX_CONF_ERROR;
 +    }
 +
++    if (s == 0) {
++        ngx_close_socket(s);
++        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "s_nlog == 0, disable nlog");
++        return NGX_CONF_OK;
++    } 
++
 +    if (ngx_nonblocking(s) == -1) {
 +        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "ngx_nonblocking() failed, %d", ngx_socket_errno);
 +        
@@ -246,7 +252,7 @@ diff -uNr nginx-1.4.1/src/core/ngx_log.c nginx-tcp-lua-module/src/core/ngx_log.c
 +        goto failed;
 +    }
 +    
-+    cf->cycle->new_log.fd = s;
++    cf->cycle->new_log.s_nlog = s;
 +
 +    cln = ngx_pool_cleanup_add(cf->pool, 0);
 +    cln->data = &cf->cycle->new_log;
@@ -268,15 +274,15 @@ diff -uNr nginx-1.4.1/src/core/ngx_log.c nginx-tcp-lua-module/src/core/ngx_log.c
 +    ngx_log_t  *log;
 +
 +    log = data;
-+    if (log->fd != -1) {
-+        ngx_close_socket(log->fd);
-+        log->fd = -1;
++    if (log->s_nlog > 0) {
++        ngx_close_socket(log->s_nlog);
++        log->s_nlog = 0;
 +    }
 +}
 +/*------------------------NLOG------------------------*/
 diff -uNr nginx-1.4.1/src/core/ngx_log.h nginx-tcp-lua-module/src/core/ngx_log.h
---- nginx-1.4.1/src/core/ngx_log.h	2016-01-14 11:25:46.264991783 +0800
-+++ nginx-tcp-lua-module/src/core/ngx_log.h	2016-01-14 10:30:35.425996262 +0800
+--- nginx-1.4.1/src/core/ngx_log.h	2013-05-06 18:26:50.000000000 +0800
++++ nginx-tcp-lua-module/src/core/ngx_log.h	2019-05-07 18:11:48.972019509 +0800
 @@ -30,6 +30,7 @@
  #define NGX_LOG_DEBUG_HTTP        0x100
  #define NGX_LOG_DEBUG_MAIL        0x200
@@ -307,7 +313,7 @@ diff -uNr nginx-1.4.1/src/core/ngx_log.h nginx-tcp-lua-module/src/core/ngx_log.h
  
      char                *action;
 +
-+    ngx_socket_t         fd;//NLOG
++    ngx_socket_t         s_nlog;//NLOG
  };
  
  
