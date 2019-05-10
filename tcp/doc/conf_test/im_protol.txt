@@ -1,0 +1,71 @@
+包格式
+|---total_len---|----json包体----------|
+4字节网络字节序 表示整个包的长度, 值范围(4,1024]
+
+协议
+注意:
+	合法消息: 
+	不合法消息: 直接断开连接
+	
+错误消息:
+	type: "error"
+	status: 406,  # option: 406客户端错误, 500服务器错误
+	reason: <reason>, string,  详细消息
+
+登陆(c->s)
+	type: "req_login"
+	token: <token>, string
+	uid: <uid>, string
+	# 仅在连接成功之后的第一个包, 收到登陆成功消息之后不再发起
+登陆响应(s->c)
+	type: "ack_login"
+	status: <status>, # number, 0成功, 1失败
+	reason: [string], 失败原因, 可选
+	
+登出(c->s)
+	type: "req_logout"
+	uid: <uid>, string
+登出响应(s->c)
+	type: "ack_logout"
+	status: <status>, # number, 固定0
+	# 该消息成功发送后立即断开连接
+	
+单聊(c1->c2):
+http://www.52im.net/thread-294-1-1.html
+c1--m1-->s
+s---m2-->c1
+s---m3-->c2
+c2--m4-->s
+s---m5-->c1
+#c1--m6-->s
+
+1. c1->s
+	type: "single_m1"
+	msg_id: <msg_id>  number 消息id号
+	to: <to>, string 接收方uid
+	msg: <msg>, string 消息
+	# 仅登陆状态合法
+2. s->c1
+	type: "single_m2"
+	msg_id: <msg_id>  number 消息id号
+	status: <status>, # number, 0收到且消息正常, 1收到且消息不正常
+	reason: [string], status为1时 失败原因; status为0时提示(如: 正在投递, 对方不在线等)
+	# 未登录时会断开连接， 其他业务错误不会
+3. s->c2:
+	type: "single_m3"
+	msg_id: <msg_id>  number 消息id号
+	from: <from>, string 发送方uid
+	msg: <msg>, string 消息
+4. c2->s:
+	type: "single_m4"
+	msg_id: <msg_id>  number 消息id号
+	from: <from>, string 发送方uid
+	status: <status>, # number, 0已正常处理, 1未正常处理
+	reason: [string], status为1时 未正常处理原因; 
+	# 未登录时会断开连接， 其他业务错误不会
+5. s->c1:
+	type: "single_m5"
+	msg_id: <msg_id>  number 消息id号
+	to: <to>, string 接收方uid
+	status: <status>, # number, 0已送达, 1未送达
+	reason: [string], status为1时 未送达原因; 

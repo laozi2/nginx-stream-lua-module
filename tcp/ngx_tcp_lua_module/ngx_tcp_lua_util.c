@@ -13,6 +13,7 @@
 #include "ngx_tcp_lua_pcrefix.h"
 #include "ngx_tcp_lua_regex.h"
 #include "ngx_tcp_lua_ssl.h"
+#include "ngx_tcp_lua_clients.h"
 
 
 
@@ -22,6 +23,7 @@ char ngx_tcp_lua_regex_cache_key;
 char ngx_tcp_lua_socket_pool_key;
 char ngx_tcp_lua_request_key;
 char ngx_tcp_lua_regex_cache_key;
+char ngx_tcp_lua_clients_pool_key;
 
 
 /*  coroutine anchoring table key in Lua vm registry */
@@ -105,6 +107,10 @@ ngx_tcp_lua_init_registry(ngx_conf_t *cf, lua_State *L)
     lua_rawset(L, LUA_REGISTRYINDEX);
 #endif
 
+    /* create the registry entry for the request clients pool table */
+    lua_pushlightuserdata(L, &ngx_tcp_lua_clients_pool_key);
+    lua_newtable(L);
+    lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
 
@@ -150,6 +156,8 @@ ngx_tcp_lua_inject_ngx_api(ngx_conf_t *cf, lua_State *L)
     ngx_tcp_lua_inject_req_time_api(L);
 
     ngx_tcp_lua_inject_shdict_api(lmcf, L);
+
+    ngx_tcp_lua_inject_clients_api(L);
 
 #if (NGX_PCRE)
     ngx_tcp_lua_inject_regex_api(L);
@@ -328,6 +336,7 @@ ngx_tcp_lua_request_cleanup(void *data)
 
     L = lmcf->lua;
     
+    ngx_tcp_lua_clients_cleanup(L, ctx);
     ngx_tcp_lua_del_thread(s, L, ctx->cc_ref);
     
     //force collect garbage

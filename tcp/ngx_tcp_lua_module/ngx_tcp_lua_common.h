@@ -121,6 +121,7 @@ typedef struct ngx_tcp_lua_ctx_s {
     ngx_tcp_lua_req_retval_handler   prepare_retvals;
 
     ngx_event_t                      sleep;  /* used for ngx.sleep */
+    ngx_str_t                        client_id; /* string */
 
     unsigned         socket_invalid:1;
     unsigned         exited:1; /*marked the thread/session need exited*/

@@ -31,7 +31,9 @@ extern char ngx_tcp_lua_cf_log_key;
  * regex cache table  */
 extern char ngx_tcp_lua_regex_cache_key;
 
-
+/* char whose address we'll use as key in Lua vm registry for
+ * request clients pool table */
+extern char ngx_tcp_lua_clients_pool_key;
 
 lua_State *ngx_tcp_lua_new_state(ngx_conf_t *cf, ngx_tcp_lua_main_conf_t *lmcf);
 lua_State *ngx_tcp_lua_new_thread(ngx_tcp_session_t *s, lua_State *L, int *ref);

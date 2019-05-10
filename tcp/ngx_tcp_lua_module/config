@@ -99,6 +99,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/ngx_tcp_lua_script.c \
                 $ngx_addon_dir/ngx_tcp_lua_regex.c \
                 $ngx_addon_dir/ngx_tcp_lua_ssl.c \
+                $ngx_addon_dir/ngx_tcp_lua_clients.c \
                 "
 
 NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
@@ -120,4 +121,5 @@ NGX_ADDON_DEPS="$NGX_ADDON_DEPS \
                 $ngx_addon_dir/ngx_tcp_lua_script.h \
                 $ngx_addon_dir/ngx_tcp_lua_regex.h \
                 $ngx_addon_dir/ngx_tcp_lua_ssl.h \
+                $ngx_addon_dir/ngx_tcp_lua_clients.h \
                 "
