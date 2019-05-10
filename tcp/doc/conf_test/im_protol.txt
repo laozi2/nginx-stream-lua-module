@@ -1,36 +1,36 @@
-°ü¸ñÊ½
-|---total_len---|----json°üÌå----------|
-4×Ö½ÚÍøÂç×Ö½ÚĞò ±íÊ¾Õû¸ö°üµÄ³¤¶È, Öµ·¶Î§(4,1024]
+åŒ…æ ¼å¼
+|---total_len---|----jsonåŒ…ä½“----------|
+4å­—èŠ‚ç½‘ç»œå­—èŠ‚åº è¡¨ç¤ºæ•´ä¸ªåŒ…çš„é•¿åº¦, å€¼èŒƒå›´(4,1024]
 
-Ğ­Òé
-×¢Òâ:
-	ºÏ·¨ÏûÏ¢: 
-	²»ºÏ·¨ÏûÏ¢: Ö±½Ó¶Ï¿ªÁ¬½Ó
+åè®®
+æ³¨æ„:
+	åˆæ³•æ¶ˆæ¯: 
+	ä¸åˆæ³•æ¶ˆæ¯: ç›´æ¥æ–­å¼€è¿æ¥
 	
-´íÎóÏûÏ¢:
+é”™è¯¯æ¶ˆæ¯:
 	type: "error"
-	status: 406,  # option: 406¿Í»§¶Ë´íÎó, 500·şÎñÆ÷´íÎó
-	reason: <reason>, string,  ÏêÏ¸ÏûÏ¢
+	status: 406,  # option: 406å®¢æˆ·ç«¯é”™è¯¯, 500æœåŠ¡å™¨é”™è¯¯
+	reason: <reason>, string,  è¯¦ç»†æ¶ˆæ¯
 
-µÇÂ½(c->s)
+ç™»é™†(c->s)
 	type: "req_login"
 	token: <token>, string
 	uid: <uid>, string
-	# ½öÔÚÁ¬½Ó³É¹¦Ö®ºóµÄµÚÒ»¸ö°ü, ÊÕµ½µÇÂ½³É¹¦ÏûÏ¢Ö®ºó²»ÔÙ·¢Æğ
-µÇÂ½ÏìÓ¦(s->c)
+	# ä»…åœ¨è¿æ¥æˆåŠŸä¹‹åçš„ç¬¬ä¸€ä¸ªåŒ…, æ”¶åˆ°ç™»é™†æˆåŠŸæ¶ˆæ¯ä¹‹åä¸å†å‘èµ·
+ç™»é™†å“åº”(s->c)
 	type: "ack_login"
-	status: <status>, # number, 0³É¹¦, 1Ê§°Ü
-	reason: [string], Ê§°ÜÔ­Òò, ¿ÉÑ¡
+	status: <status>, # number, 0æˆåŠŸ, 1å¤±è´¥
+	reason: [string], å¤±è´¥åŸå› , å¯é€‰
 	
-µÇ³ö(c->s)
+ç™»å‡º(c->s)
 	type: "req_logout"
 	uid: <uid>, string
-µÇ³öÏìÓ¦(s->c)
+ç™»å‡ºå“åº”(s->c)
 	type: "ack_logout"
-	status: <status>, # number, ¹Ì¶¨0
-	# ¸ÃÏûÏ¢³É¹¦·¢ËÍºóÁ¢¼´¶Ï¿ªÁ¬½Ó
+	status: <status>, # number, å›ºå®š0
+	# è¯¥æ¶ˆæ¯æˆåŠŸå‘é€åç«‹å³æ–­å¼€è¿æ¥
 	
-µ¥ÁÄ(c1->c2):
+å•èŠ(c1->c2):
 http://www.52im.net/thread-294-1-1.html
 c1--m1-->s
 s---m2-->c1
@@ -41,31 +41,31 @@ s---m5-->c1
 
 1. c1->s
 	type: "single_m1"
-	msg_id: <msg_id>  number ÏûÏ¢idºÅ
-	to: <to>, string ½ÓÊÕ·½uid
-	msg: <msg>, string ÏûÏ¢
-	# ½öµÇÂ½×´Ì¬ºÏ·¨
+	msg_id: <msg_id>  number æ¶ˆæ¯idå·
+	to: <to>, string æ¥æ”¶æ–¹uid
+	msg: <msg>, string æ¶ˆæ¯
+	# ä»…ç™»é™†çŠ¶æ€åˆæ³•
 2. s->c1
 	type: "single_m2"
-	msg_id: <msg_id>  number ÏûÏ¢idºÅ
-	status: <status>, # number, 0ÊÕµ½ÇÒÏûÏ¢Õı³£, 1ÊÕµ½ÇÒÏûÏ¢²»Õı³£
-	reason: [string], statusÎª1Ê± Ê§°ÜÔ­Òò; statusÎª0Ê±ÌáÊ¾(Èç: ÕıÔÚÍ¶µİ, ¶Ô·½²»ÔÚÏßµÈ)
-	# Î´µÇÂ¼Ê±»á¶Ï¿ªÁ¬½Ó£¬ ÆäËûÒµÎñ´íÎó²»»á
+	msg_id: <msg_id>  number æ¶ˆæ¯idå·
+	status: <status>, # number, 0æ”¶åˆ°ä¸”æ¶ˆæ¯æ­£å¸¸, 1æ”¶åˆ°ä¸”æ¶ˆæ¯ä¸æ­£å¸¸
+	reason: [string], statusä¸º1æ—¶ å¤±è´¥åŸå› ; statusä¸º0æ—¶æç¤º(å¦‚: æ­£åœ¨æŠ•é€’, å¯¹æ–¹ä¸åœ¨çº¿ç­‰)
+	# æœªç™»å½•æ—¶ä¼šæ–­å¼€è¿æ¥ï¼Œ å…¶ä»–ä¸šåŠ¡é”™è¯¯ä¸ä¼š
 3. s->c2:
 	type: "single_m3"
-	msg_id: <msg_id>  number ÏûÏ¢idºÅ
-	from: <from>, string ·¢ËÍ·½uid
-	msg: <msg>, string ÏûÏ¢
+	msg_id: <msg_id>  number æ¶ˆæ¯idå·
+	from: <from>, string å‘é€æ–¹uid
+	msg: <msg>, string æ¶ˆæ¯
 4. c2->s:
 	type: "single_m4"
-	msg_id: <msg_id>  number ÏûÏ¢idºÅ
-	from: <from>, string ·¢ËÍ·½uid
-	status: <status>, # number, 0ÒÑÕı³£´¦Àí, 1Î´Õı³£´¦Àí
-	reason: [string], statusÎª1Ê± Î´Õı³£´¦ÀíÔ­Òò; 
-	# Î´µÇÂ¼Ê±»á¶Ï¿ªÁ¬½Ó£¬ ÆäËûÒµÎñ´íÎó²»»á
+	msg_id: <msg_id>  number æ¶ˆæ¯idå·
+	from: <from>, string å‘é€æ–¹uid
+	status: <status>, # number, 0å·²æ­£å¸¸å¤„ç†, 1æœªæ­£å¸¸å¤„ç†
+	reason: [string], statusä¸º1æ—¶ æœªæ­£å¸¸å¤„ç†åŸå› ; 
+	# æœªç™»å½•æ—¶ä¼šæ–­å¼€è¿æ¥ï¼Œ å…¶ä»–ä¸šåŠ¡é”™è¯¯ä¸ä¼š
 5. s->c1:
 	type: "single_m5"
-	msg_id: <msg_id>  number ÏûÏ¢idºÅ
-	to: <to>, string ½ÓÊÕ·½uid
-	status: <status>, # number, 0ÒÑËÍ´ï, 1Î´ËÍ´ï
-	reason: [string], statusÎª1Ê± Î´ËÍ´ïÔ­Òò; 
+	msg_id: <msg_id>  number æ¶ˆæ¯idå·
+	to: <to>, string æ¥æ”¶æ–¹uid
+	status: <status>, # number, 0å·²é€è¾¾, 1æœªé€è¾¾
+	reason: [string], statusä¸º1æ—¶ æœªé€è¾¾åŸå› ; 
